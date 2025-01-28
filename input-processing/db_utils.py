@@ -211,3 +211,35 @@ def fetch_clarity_data(logger, test_run_id):
             cursor.close()
         if conn:
             conn.close()
+
+def save_clarity_scores(logger, persona_id, clarity_scores):
+    """
+    Save clarity scores to the database for a specific persona.
+
+    Args:
+        persona_id (int): The ID of the persona.
+        clarity_scores (dict): The clarity score breakdown to store.
+    """
+    query = """
+        UPDATE personas
+        SET clarity_scores = %s
+        WHERE persona_id = %s;
+    """
+    try:
+        # Connect to the database
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+
+        # Execute the query
+        cur.execute(query, (json.dumps(clarity_scores), persona_id))
+        conn.commit()
+
+        logger.info(f"[IC db_utils] Clarity scores saved for persona_id={persona_id}")
+    except psycopg2.Error as e:
+        logger.error(f"[IC db_utils] Failed to save clarity scores for persona_id={persona_id}: {e}")
+        raise
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()

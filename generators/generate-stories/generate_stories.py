@@ -1,64 +1,104 @@
-import argparse
-from config import generate_stories_logger as logger
-from db_utils import fetch_persona_data, fetch_all_personas_in_test_run
+import random
+from openai import OpenAI
+from config import OPENAI_API_KEY, story_logger
 from theme_prioritizer import prioritize_themes
 
-def main():
+# Initialize OpenAI client
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+# Utility Function: Shuffle Prompt Components
+def shuffle_prompt_components(components):
     """
-    Main script to generate stories for personas. Fetches data, prioritizes themes, and prepares for story generation.
-    """
-    # Parse command-line arguments
-    parser = argparse.ArgumentParser(description="Generate stories for personas.")
-    parser.add_argument("-t", "--test_run_id", type=int, required=True, help="The test run ID.")
-    parser.add_argument("-p", "--persona_id", type=int, help="The ID of a specific persona (optional).")
-    args = parser.parse_args()
-
-    # If persona_id is provided, process only that persona
-    if args.persona_id:
-        logger.info(f"Fetching data for persona_id={args.persona_id}, test_run_id={args.test_run_id}")
-        persona_data = fetch_persona_data(args.persona_id, args.test_run_id)
-
-        if persona_data:
-            process_persona(persona_data)
-        else:
-            logger.warning(f"No data found for persona_id={args.persona_id} and test_run_id={args.test_run_id}")
-            print(f"No data found for persona_id={args.persona_id} and test_run_id={args.test_run_id}")
-    else:
-        # If no persona_id is provided, process all personas for the test run
-        logger.info(f"Fetching data for all personas in test_run_id={args.test_run_id}")
-        all_personas = fetch_all_personas_in_test_run(args.test_run_id)
-
-        if all_personas:
-            for persona_data in all_personas:
-                process_persona(persona_data)
-        else:
-            logger.warning(f"No data found for test_run_id={args.test_run_id}")
-            print(f"No data found for test_run_id={args.test_run_id}")
-
-def process_persona(persona_data):
-    """
-    Process a single persona, prioritizing themes and preparing for story generation.
+    Shuffle the logical chunks of the prompt to introduce natural variability.
 
     Args:
-        persona_data (dict): Data for a single persona.
+        components (list): List of prompt components (strings).
+
+    Returns:
+        str: Reorganized prompt as a single string.
     """
+    random.shuffle(components)
+    return "\n".join(components)
+
+# Story Generation Function
+def generate_story(persona_data):
+    """
+    Generate a day-in-the-life story based on persona details.
+
+    Args:
+        persona_data (dict): Persona details including themes, input data, and preferences.
+
+    Returns:
+        str: Generated story content.
+    """
+    # Step 1: Prioritize Themes
     thresholds = {
         "CHUNK_CONFIDENCE_THRESHOLD": 0.4,
         "OVERALL_CONFIDENCE_THRESHOLD": 0.6,
         "PROBABLE_THEME_BOOST": 1.1
     }
-
-    # Prioritize themes
-    logger.info(f"Prioritizing themes for persona_id={persona_data['inputs'][0]['persona_id']}")
     prioritized_themes = prioritize_themes(persona_data, thresholds)
 
-    # Output results
-    print(f"Persona ID: {persona_data['inputs'][0]['persona_id']}")
-    print("Primary Theme:", prioritized_themes["primary_theme"])
-    print("Secondary Themes:", prioritized_themes["secondary_themes"])
-    print("Adjusted Weights:", prioritized_themes["adjusted_weights"])
+    # Extract relevant details
+    primary_theme = prioritized_themes["primary_theme"]
+    secondary_themes = prioritized_themes["secondary_themes"]
+    all_themes = list(prioritized_themes["adjusted_weights"].keys())
+    other_themes = [theme for theme in all_themes if theme not in {primary_theme, *secondary_themes}]
+    input_details = persona_data.get("input_details", {})
 
-    logger.info(f"Theme prioritization completed for persona_id={persona_data['inputs'][0]['persona_id']}")
+    # Step 2: Determine the Day Type
+    day_types = ["Routine", "Adventure", "Work/Productivity", "Social", "Challenges"]
+    day_type = random.choice(day_types)
+
+    # Step 3: Define Prompt Chunks
+    prompt_chunks = [
+        f"Primary Theme: {primary_theme}",
+        f"Secondary Themes: {', '.join(secondary_themes)}",
+        f"Other Aspects: Focus on additional elements such as {', '.join(other_themes)}.",
+        f"Specific Inputs:\n  - Core Values: {input_details.get('core_values', 'N/A')}\n  - Actualization: {input_details.get('actualization', 'N/A')}\n  - Keywords/Details: {input_details.get('keyword_matches', 'N/A')}",
+        f"Write a detailed narrative of their {day_type.lower()} day. Include:\n- A balance of major and subtle moments.\n- Sensory details (sights, sounds, smells, etc.).\n- Emotional moments (gratitude, joy, resilience, etc.).\n- Interactions with consistent characters (friends, family, colleagues, pets, etc.).\n- Varied activities that reflect their routines, environment, and goals.",
+        "Ensure the story flows naturally from morning to evening, integrating their primary themes while weaving in other aspects of their life for depth and authenticity. Highlight both the extraordinary and the everyday magic of their ideal world."
+    ]
+
+    # Step 4: Shuffle Prompt
+    prompt = shuffle_prompt_components(prompt_chunks)
+
+    # Step 5: Call OpenAI API
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a vivid and emotionally resonant storyteller."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1500,
+            temperature=0.8
+        )
+        story = response.choices[0].message.content.strip()
+        return story
+    except Exception as e:
+        story_logger.error(f"Error generating story: {e}")
+        return "An error occurred while generating the story."
+
+# Example Usage
+def main():
+    """Example workflow for generating a story."""
+    # Simulated persona data (replace with actual data fetch in production)
+    persona_data = {
+        "input_details": {
+            "core_values": "Growth, connection, and creativity.",
+            "vision_of_success": "Running a thriving art business by the beach.",
+            "morning_routine": "Yoga, journaling, and a cup of coffee by the ocean."
+        },
+        "extracted_themes": {  # Example themes (replace with actual extraction logic)
+            "Career and Contribution": 0.5,
+            "Lifestyle and Environment": 0.8
+        }
+    }
+
+    story = generate_story(persona_data)
+    print("Generated Story:")
+    print(story)
 
 if __name__ == "__main__":
     main()

@@ -3,10 +3,9 @@ import sys
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
 sys.path.append(base_path)
 import argparse
-from keyword_matcher import match_keywords
-from db_utils import reset_keyword_matches
+from db_utils import reset_keyword_matches, save_clarity_scores
 from config import input_processing_logger as logger
-from pull_input_data import pull_input_stats, pull_clarity_score_inputs
+from pull_input_data import pull_clarity_score_inputs
 from input_stats_report import generate_summary_report
 
 def calculate_clarity_score(test_run_id, reprocess=False, generate_report=False):
@@ -76,7 +75,25 @@ def calculate_clarity_score(test_run_id, reprocess=False, generate_report=False)
         foundation_complete,
         completeness_bucket,
     )
-    # Step 5: Log final clarity score results
+    # Step 5: Save the scores to the database
+    for persona_id, persona_data in input_data.items():
+        logger.info(f"[Clarity Score] Calculating clarity score for persona_id: {persona_id}")
+    
+        clarity_scores = calculate_clarity_score_logic(
+            persona_data["aggregate_themes"],
+            persona_data["complete_response_themes"],
+            persona_data["probable_theme"],
+            persona_data["chunk_scores"],
+            persona_data["keyword_matches"],
+            persona_data["foundation_complete"],
+            persona_data["completeness_bucket"],
+        )
+        persona_scores[persona_id] = clarity_scores
+        logger.info(f"[Clarity Score] Results for persona_id {persona_id}: {clarity_scores}")
+
+        save_clarity_scores(logger, persona_id, clarity_scores)
+
+    # Step 6: Log final clarity score results
     for persona_id, scores in persona_scores.items():
         logger.info(f"[Clarity Score] Persona {persona_id} Scores: {scores}")
 
@@ -109,15 +126,7 @@ def calculate_clarity_score(test_run_id, reprocess=False, generate_report=False)
     print("\nClarity Score Results:")
     print(tabulate(table_rows, headers=headers, tablefmt="grid", floatfmt=".2f"))
 
-    persona_data[persona_id] = {
-        "aggregate_themes": aggregate_themes,
-        "complete_response_themes": complete_response_themes,
-        "probable_theme": probable_theme,
-        "chunk_scores": chunk_scores,
-        "keyword_matches": keyword_matches,
-        "foundation_complete": foundation_complete,
-        "completeness_bucket": completeness_bucket,
-}
+    return persona_scores
 
 
 def calculate_clarity_score_logic(
