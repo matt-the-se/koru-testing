@@ -1,0 +1,9 @@
+{
+    "Career and Contribution": ["work", "profession", "job", "career", "vocation"],
+    "Health and Well-being": ["fitness", "wellness", "exercise", "self-care", "vitality"],
+    "Leisure and Passions": ["hobbies", "interests", "fun", "recreation", "pastime"],
+    "Lifestyle and Environment": ["home", "neighborhood", "environment", "living", "style", "surroundings"],
+    "Relationships and Community": ["family", "friends", "society", "community", "connections","social"],
+    "Spirituality and Purpose": ["faith", "spirituality", "meaning", "purpose", "beliefs","values","morals"],
+    "Travel and Adventure": ["vacation", "jet-set", "exploration", "journey", "voyage"]
+}

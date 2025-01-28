@@ -1,0 +1,53 @@
+{
+    "system_messages": {
+        "default": "You are simulating user responses for a life visualization app.",
+        "slang": "You are simulating user responses for a life visualization app. Respond using modern slang.",
+        "theme_focus": "You are simulating user responses for a life visualization app. Focus on these themes: {themes}.",
+        "fragments": "You are simulating user responses for a life visualization app. Respond in sentence fragments.",
+        "formal": "You are simulating user responses for a life visualization app. Use formal language."
+    },
+    "freeform_prompts": [
+        {
+            "prompt": "What does life feel like for you right now?",
+            "variations": [
+                "Describe your current state of mind in a few words.",
+                "How would you summarize your present moment?",
+                "What emotions dominate your daily life at this time?"
+            ],
+            "section": "classifier_testing"
+        },
+        {
+            "prompt": "What experiences and moments make your life truly special?",
+            "variations": [
+                "What specific events bring you the most joy?",
+                "Describe a moment that encapsulates your best life.",
+                "How do you know you're living a fulfilling life?"
+            ],
+            "section": "classifier_testing"
+        }
+    ],
+    "structured_prompts": {
+        "core vision": {
+            "Spirituality and Purpose": [
+                {
+                    "prompt": "What are the values or principles that define your best self? Why are they important?",
+                    "variations": [
+                        "What core values guide your decisions and bring you a sense of purpose?",
+                        "What traits or qualities do you most admire in yourself or aspire to embody?",
+                        "What personal principles would you never compromise on? Why?"
+                    ],
+                    "tags": ["values", "purpose", "alignment", "self-definition"]
+                },
+                {
+                    "prompt": "What practices or beliefs help you feel aligned and connected in your ideal life?",
+                    "variations": [
+                        "How do you nurture your inner peace and spiritual growth?",
+                        "What role does mindfulness or reflection play in your dream life?",
+                        "Describe a moment when you felt most connected to your spirituality."
+                    ],
+                    "tags": ["spiritual practices", "inner peace", "mindfulness", "growth"]
+                }
+            ]
+        }
+    }
+}

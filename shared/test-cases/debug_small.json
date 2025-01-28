@@ -1,0 +1,22 @@
+{
+    "system_messages": {
+        "default": "You are simulating user responses for a life visualization app"
+    },
+    "open_ai_model": "gpt-3.5-turbo",
+    "detail_level": ["minimal", "moderate", "detailed"],
+    
+    "freeform_prompts": [
+        { "prompt_id": 1 }
+    ],
+    "structured_prompts": [
+        {
+            "prompt_id": 15,
+            "variations": [
+                { "id": 1 }
+            ]
+        },
+        {
+            "prompt_id": 16
+        }
+    ]
+}

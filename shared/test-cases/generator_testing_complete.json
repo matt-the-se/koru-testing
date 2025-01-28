@@ -1,0 +1,140 @@
+{
+    "system_messages": {
+        "default": "You are simulating user responses for a life visualization app."
+    },
+    "detail_level": ["minimal", "moderate", "detailed"],
+    "freeform_prompts": [
+        { "prompt_id": 1 },
+        { "prompt_id": 2 },
+        { "prompt_id": 3 },
+        { "prompt_id": 4 },
+        { "prompt_id": 5 },
+        { "prompt_id": 6 },
+        { "prompt_id": 7 },
+        { "prompt_id": 8 },
+        { "prompt_id": 9 },
+        { "prompt_id": 10 }
+    ],
+    "structured_prompts": [
+        {
+            "prompt_id": 11,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 12,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 13,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 14,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 15,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 16,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 17,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 18,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 19,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 20,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 21,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 22,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 23,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 24,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        },
+        {
+            "prompt_id": 25,
+            "variations": [
+                { "id": 1 },
+                { "id": 2 },
+                { "id": 3 }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,188 @@
+{
+    "freeform_prompts": [
+        "What does life feel like for you right now?",
+        "Describe the world you live in. What makes it meaningful and exciting?",
+        "What brings you the most joy and fulfillment in your life?",
+        "How does your life reflect your values and passions?",
+        "Imagine a random day in your life. What is it like?",
+        "What experiences and moments make your life truly special?",
+        "What does it mean to you to feel truly alive and connected?",
+        "How would you describe the life you’re living in a few words or sentences?",
+        "What stands out the most to you about your life and how you live it?",
+        "What do you love most about your life?"
+    ],
+    "structured_prompts": {
+        "Core Vision": {
+            "Spirituality and Purpose": [
+                {
+                    "prompt": "What are the values or principles that define your best self? Why are they important?",
+                    "variations": [
+                        "What core values guide your decisions and bring you a sense of purpose?",
+                        "What traits or qualities do you most admire in yourself or aspire to embody?",
+                        "What personal principles would you never compromise on? Why?"
+                    ],
+                    "tags": ["values", "purpose", "alignment", "self-definition"]
+                },
+                {
+                    "prompt": "What practices or beliefs help you feel aligned and connected in your ideal life?",
+                    "variations": [
+                        "How do you nurture your inner peace and spiritual growth?",
+                        "What role does mindfulness or reflection play in your dream life?",
+                        "Describe a moment when you felt most connected to your spirituality."
+                    ],
+                    "tags": ["spiritual practices", "inner peace", "mindfulness", "growth"]
+                }
+            ],
+            "Lifestyle and Environment": [
+                {
+                    "prompt": "Where do you live in your dream life? Describe the space, location, and how it feels.",
+                    "variations": [
+                        "What about your living environment makes it feel uniquely yours?",
+                        "Do you see yourself rooted in one place or living a more nomadic lifestyle? Why?",
+                        "What details about your home bring you the most comfort and joy?"
+                    ],
+                    "tags": ["home", "environment", "comfort", "identity", "nomadic living"]
+                },
+                {
+                    "prompt": "What balance do you imagine between productivity and relaxation in your best days?",
+                    "variations": [
+                        "How do you ensure each day feels fresh and exciting?",
+                        "Describe a day where you feel balanced and fulfilled.",
+                        "What activities help you feel most connected to the present moment?"
+                    ],
+                    "tags": ["daily rhythm", "balance", "relaxation", "fulfillment"]
+                },
+                {
+                    "prompt": "How does the external environment (e.g., community, weather, culture) influence your ideal lifestyle?",
+                    "variations": [
+                        "What role do external influences like weather or culture play in shaping your daily life?",
+                        "How does your surrounding community add to your sense of well-being?",
+                        "Describe the external factors that make your lifestyle unique."
+                    ],
+                    "tags": ["external influences", "weather", "culture", "community"]
+                }
+            ],
+            "Leisure and Passions": [
+                {
+                    "prompt": "What hobbies or activities bring you the most joy in your ideal life?",
+                    "variations": [
+                        "Describe a moment when you felt completely immersed in something you love doing.",
+                        "How do your hobbies connect you to others or help you grow?",
+                        "What hobbies make you feel the most energized and inspired?"
+                    ],
+                    "tags": ["hobbies", "personal joy", "passions", "growth"]
+                },
+                {
+                    "prompt": "What creative or intellectual pursuits inspire you the most?",
+                    "variations": [
+                        "Describe an artistic or creative activity that makes you feel fulfilled.",
+                        "What role does learning or problem-solving play in your ideal life?",
+                        "How do you channel your creativity into meaningful expression?"
+                    ],
+                    "tags": ["creativity", "intellectual pursuits", "expression", "fulfillment"]
+                }
+            ]
+        },
+        "Actualization": {
+            "Relationships and Community": [
+                {
+                    "prompt": "Describe the relationships in your ideal life. Who are you closest to, and how do you spend time together?",
+                    "variations": [
+                        "In your dream life, what role do love and trust play in your relationships?",
+                        "What is the most fulfilling aspect of your relationships in your best life?",
+                        "Who are the most important people in your life, and how do they contribute to your happiness?"
+                    ],
+                    "tags": ["relationships", "community", "connection", "trust"]
+                },
+                {
+                    "prompt": "How do you nurture and grow these connections?",
+                    "variations": [
+                        "What qualities do you value most in your closest relationships?",
+                        "What role does support and trust play in your relationships?",
+                        "What actions or traditions help strengthen your relationships?"
+                    ],
+                    "tags": ["nurture", "traditions", "support", "growth"]
+                }
+            ],
+            "Career and Contribution": [
+                {
+                    "prompt": "What does your ideal workday involve? What makes it fulfilling?",
+                    "variations": [
+                        "What kind of work or contribution feels most meaningful to you?",
+                        "Describe a project or passion that excites you in your best life.",
+                        "What impact does your work have on your life and others?"
+                    ],
+                    "tags": ["work", "fulfillment", "impact", "projects"]
+                },
+                {
+                    "prompt": "How do you contribute to your community or the world through your work?",
+                    "variations": [
+                        "What legacy do you want your work to leave behind?",
+                        "How does your work create value for others?",
+                        "Describe a way your work helps make the world a better place."
+                    ],
+                    "tags": ["community", "legacy", "value", "impact"]
+                }
+            ],
+            "Health and Well-being": [
+                {
+                    "prompt": "What daily habits or routines keep you healthy and balanced in your best life?",
+                    "variations": [
+                        "How do you care for your mental and emotional well-being?",
+                        "Describe a self-care practice that brings you joy and rejuvenation.",
+                        "What role does physical activity play in maintaining your well-being?"
+                    ],
+                    "tags": ["habits", "routine", "balance", "mental health", "physical activity"]
+                },
+                {
+                    "prompt": "What practices keep you resilient and emotionally strong?",
+                    "variations": [
+                        "Describe how you manage stress and stay centered.",
+                        "What self-care practices help you recharge and thrive?",
+                        "What brings you joy while supporting your emotional health?"
+                    ],
+                    "tags": ["resilience", "emotional health", "stress management", "self-care"]
+                }
+            ],
+            "Travel and Adventure": [
+                {
+                    "prompt": "Where would you travel if anything were possible? How would it make you feel?",
+                    "variations": [
+                        "What makes these travel experiences meaningful to you?",
+                        "How do new places inspire or energize you?",
+                        "Describe a dream trip and what it adds to your life story."
+                    ],
+                    "tags": ["travel", "exploration", "inspiration", "personal joy"]
+                },
+                {
+                    "prompt": "How do surprises and unplanned events fit into your ideal life? Do you embrace or avoid them?",
+                    "variations": [
+                        "Can you recall a moment when something unexpected brought you joy?",
+                        "How do you make room for spontaneity in your daily routine?",
+                        "What role do surprises play in keeping life exciting and meaningful?"
+                    ],
+                    "tags": ["spontaneity", "surprises", "excitement", "adaptability"]
+                }
+            ]
+        }
+    },
+    "tags": {
+        "Universal": [
+            "values",
+            "growth",
+            "joy",
+            "balance",
+            "impact",
+            "fulfillment"
+        ],
+        "Theme-Specific": {
+            "Spirituality and Purpose": ["alignment", "mindfulness", "inner peace"],
+            "Lifestyle and Environment": ["home", "environment", "comfort", "culture"],
+            "Leisure and Passions": ["hobbies", "personal joy", "creativity", "expression"],
+            "Relationships and Community": ["relationships", "trust", "nurture"],
+            "Career and Contribution": ["work", "legacy", "value", "projects"],
+            "Health and Well-being": ["routine", "resilience", "mental health", "self-care"],
+            "Travel and Adventure": ["travel", "exploration", "spontaneity", "surprises"]
+        }
+    }
+}

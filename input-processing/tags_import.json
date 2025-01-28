@@ -1,0 +1,63 @@
+{
+    "themes": {
+      "Spirituality & Purpose": {
+        "values": ["honesty", "integrity", "virtue", "compassion", "empathy"],
+        "keywords": ["spirituality", "purpose", "gratitude", "mindfulness", "meditation", "reflection", "manifestation", "faith", "belief", "divine"],
+        "synonyms": {
+          "spirituality": ["faith", "belief", "inner peace"],
+          "mindfulness": ["awareness", "consciousness"],
+          "gratitude": ["thankfulness", "appreciation"]
+        }
+      },
+      "Lifestyle & Environment": {
+        "values": ["comfort", "aesthetics", "eco-friendly"],
+        "keywords": ["lifestyle", "environment", "home", "garden", "amenities", "vehicles", "routine", "neighborhood", "ocean", "mountain"],
+        "synonyms": {
+          "home": ["house", "villa", "mansion"],
+          "vehicles": ["car", "truck", "boat", "motorcycle"],
+          "routine": ["schedule", "daily habits"]
+        }
+      },
+      "Leisure & Passions": {
+        "values": ["creativity", "adventure", "relaxation"],
+        "keywords": ["leisure", "passions", "art", "sports", "hobbies", "traveling", "exploring", "nightlife", "dancing", "gardening"],
+        "synonyms": {
+          "art": ["painting", "drawing", "sculpting"],
+          "sports": ["soccer", "baseball", "football"],
+          "hobbies": ["crafting", "baking", "cooking"]
+        }
+      },
+      "Relationships & Community": {
+        "values": ["trust", "support", "connection"],
+        "keywords": ["relationships", "community", "family", "friends", "neighbors", "colleagues", "pets", "nurture", "caring", "mentorship"],
+        "synonyms": {
+          "family": ["mother", "father", "children"],
+          "community": ["neighborhood", "support network"]
+        }
+      },
+      "Career & Contribution": {
+        "values": ["dedication", "impact", "growth"],
+        "keywords": ["career", "contribution", "work", "skills", "goals", "causes", "projects", "philanthropy", "volunteering", "duties"],
+        "synonyms": {
+          "career": ["job", "profession"],
+          "contribution": ["impact", "influence"]
+        }
+      },
+      "Health & Well-being": {
+        "values": ["fitness", "self-care", "recovery"],
+        "keywords": ["health", "well-being", "exercise", "nutrition", "mental health", "yoga", "meditation", "hydration", "sleep", "flexibility"],
+        "synonyms": {
+          "exercise": ["workout", "training"],
+          "nutrition": ["diet", "healthy eating"]
+        }
+      },
+      "Travel & Adventure": {
+        "values": ["curiosity", "exploration", "freedom"],
+        "keywords": ["travel", "adventure", "exploration", "vacation", "holiday", "roadtrip", "hiking", "sightseeing", "accommodations", "spontaneity"],
+        "synonyms": {
+          "travel": ["journey", "trip"],
+          "accommodations": ["hotel", "suite", "luxury stay"]
+        }
+      }
+    }
+  }

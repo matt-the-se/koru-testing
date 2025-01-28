@@ -1,0 +1,9 @@
+.DS_Store
+*.log
+# Ignore all __pycache__ folders
+__pycache__/
+
+# Ignore specific subfolders (if needed)
+**/__pycache__/
+
+__pycache__
