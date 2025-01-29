@@ -1,7 +1,15 @@
+import os
+import sys
+base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+sys.path.append(base_path)
 import random
+import json
+import psycopg2
+import argparse
 from openai import OpenAI
-from config import OPENAI_API_KEY, story_logger
-from theme_prioritizer import prioritize_themes
+from config import OPENAI_API_KEY, generate_stories_logger as logger, DB_CONFIG
+from persona_profile_builder import build_persona_profile
+import uuid
 
 # Initialize OpenAI client
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -20,85 +28,220 @@ def shuffle_prompt_components(components):
     random.shuffle(components)
     return "\n".join(components)
 
+def store_story_prompts(test_run_id, persona_id, prompt, story_themes):
+    """
+    Store the generated story prompt in the database and return the generated story_id.
+
+    Args:
+        test_run_id (int): The test run ID.
+        persona_id (int): The persona ID.
+        prompt (str): The generated story prompt.
+        story_themes (dict): The themes used in the story.
+
+    Returns:
+        tuple: (story_id, test_run_id) to ensure consistency.
+    """
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+
+        # Ensure test_run_id is set
+        if test_run_id is None:
+            cur.execute("SELECT test_run_id FROM personas WHERE persona_id = %s;", (persona_id,))
+            result = cur.fetchone()
+            if result:
+                test_run_id = result[0]
+            else:
+                logger.error(f"Failed to fetch test_run_id for persona_id={persona_id}")
+                return None, None
+
+        logger.info(f"Storing story prompt for persona_id={persona_id}, test_run_id={test_run_id}")
+        logger.info(f"Prompt: {prompt}")
+
+        cur.execute("""
+            INSERT INTO stories (persona_id, test_run_id, story_prompts, story_themes, story_content, story_length, metadata)
+            VALUES (%s, %s, %s, %s, NULL, NULL, NULL)
+            RETURNING story_id;
+        """, (persona_id, test_run_id, prompt, json.dumps(story_themes)))
+
+        result = cur.fetchone()  # Fetch the new story_id safely
+
+        if result:
+            story_id = result[0]
+            conn.commit()
+            logger.info(f"Successfully stored story prompt. story_id={story_id}")
+        else:
+            logger.error(f"Failed to retrieve story_id after insertion for persona_id={persona_id}, test_run_id={test_run_id}")
+            story_id = None
+
+        cur.close()
+        conn.close()
+        return story_id
+    except Exception as e:
+        logger.error(f"Error storing story prompt: {e}")
+        return None, None  # Return None if insertion fails
+
+
+def store_story(test_run_id, persona_id, story_id, story, metadata):
+    """
+    Update the generated story content in the database.
+
+    Args:
+        test_run_id (int): The test run ID.
+        persona_id (int): The persona ID.
+        story_id (int): The story ID from the initial insert.
+        story (str): The generated story content.
+        metadata (dict): Metadata for the API call.
+    """
+    try:
+        if story_id is None:
+            logger.error(f"Cannot store story: story_id is None for persona_id={persona_id}, test_run_id={test_run_id}")
+            return
+
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+
+        # If test_run_id is None, don't use it in the WHERE clause
+        if test_run_id:
+            cur.execute("""
+                UPDATE stories
+                SET story_content = %s, story_length = %s, metadata = %s
+                WHERE story_id = %s AND persona_id = %s AND test_run_id = %s;
+            """, (story, len(story.split()), json.dumps(metadata), story_id, persona_id, test_run_id))
+        else:
+            cur.execute("""
+                UPDATE stories
+                SET story_content = %s, story_length = %s, metadata = %s
+                WHERE story_id = %s AND persona_id = %s;
+            """, (story, len(story.split()), json.dumps(metadata), story_id, persona_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        logger.info(f"Successfully stored story for persona_id={persona_id}, test_run_id={test_run_id}, story_id={story_id}")
+    except Exception as e:
+        logger.error(f"Error storing story content: {e}")
 # Story Generation Function
-def generate_story(persona_data):
+def generate_story(test_run_id, persona_id):
     """
     Generate a day-in-the-life story based on persona details.
 
     Args:
-        persona_data (dict): Persona details including themes, input data, and preferences.
+        test_run_id (int): The test run ID.
+        persona_id (int): The persona ID.
 
     Returns:
         str: Generated story content.
     """
-    # Step 1: Prioritize Themes
-    thresholds = {
-        "CHUNK_CONFIDENCE_THRESHOLD": 0.4,
-        "OVERALL_CONFIDENCE_THRESHOLD": 0.6,
-        "PROBABLE_THEME_BOOST": 1.1
+    # Step 1: Build Persona Profile
+    persona_data = build_persona_profile(logger, persona_id, test_run_id)
+    if not persona_data:
+        return "No persona data available."
+
+    # Step 2: Extract and Prioritize Relevant Details
+    primary_theme = persona_data["primary_theme"]
+    secondary_themes = persona_data["secondary_themes"]
+    passion_scores = persona_data["passion_scores"]  # Use passion scores
+    input_details = persona_data["inputs"]
+
+    # **Step 2.1: Select the Most Passionate Inputs**
+    top_passionate_inputs = sorted(
+        input_details, key=lambda x: passion_scores.get(x["input_id"], 0), reverse=True
+    )[:3]  # Keep top 3 most passionate responses
+
+    # **Step 2.2: Format the Inputs Cleanly**
+    key_details = []
+    for input_data in top_passionate_inputs:
+        response_text = input_data["response_text"]
+        theme = input_data["prompt_theme"]
+        key_details.append(f"- {theme}: {response_text}")
+
+    # **Step 2.3: Structure Story Themes**
+    story_themes = {
+        "primary_theme": primary_theme,
+        "secondary_themes": secondary_themes
     }
-    prioritized_themes = prioritize_themes(persona_data, thresholds)
 
-    # Extract relevant details
-    primary_theme = prioritized_themes["primary_theme"]
-    secondary_themes = prioritized_themes["secondary_themes"]
-    all_themes = list(prioritized_themes["adjusted_weights"].keys())
-    other_themes = [theme for theme in all_themes if theme not in {primary_theme, *secondary_themes}]
-    input_details = persona_data.get("input_details", {})
-
-    # Step 2: Determine the Day Type
+    # **Step 3: Define Story Structure**
     day_types = ["Routine", "Adventure", "Work/Productivity", "Social", "Challenges"]
-    day_type = random.choice(day_types)
+    events = ["A major breakthrough", "A surprise visit", "A reflective moment", "A minor setback", "A celebration"]
+    special_moments = ["A deep conversation", "An unexpected joy", "A lesson learned", "A moment of gratitude"]
 
-    # Step 3: Define Prompt Chunks
+    day_type = random.choice(day_types)
+    event = random.choice(events)
+    special_moment = random.choice(special_moments)
+
+    # **Step 4: Construct the Prompt**
     prompt_chunks = [
         f"Primary Theme: {primary_theme}",
         f"Secondary Themes: {', '.join(secondary_themes)}",
-        f"Other Aspects: Focus on additional elements such as {', '.join(other_themes)}.",
-        f"Specific Inputs:\n  - Core Values: {input_details.get('core_values', 'N/A')}\n  - Actualization: {input_details.get('actualization', 'N/A')}\n  - Keywords/Details: {input_details.get('keyword_matches', 'N/A')}",
-        f"Write a detailed narrative of their {day_type.lower()} day. Include:\n- A balance of major and subtle moments.\n- Sensory details (sights, sounds, smells, etc.).\n- Emotional moments (gratitude, joy, resilience, etc.).\n- Interactions with consistent characters (friends, family, colleagues, pets, etc.).\n- Varied activities that reflect their routines, environment, and goals.",
-        "Ensure the story flows naturally from morning to evening, integrating their primary themes while weaving in other aspects of their life for depth and authenticity. Highlight both the extraordinary and the everyday magic of their ideal world."
+        f"User’s Most Passionate Inputs:\n" + "\n".join(key_details),
+        f"Write a detailed narrative of their {day_type.lower()} day, incorporating {event} and {special_moment}. Include:",
+        "- Sensory details (sights, sounds, smells, etc.).",
+        "- Emotional moments (gratitude, joy, resilience, etc.).",
+        "- Interactions with consistent characters (friends, family, colleagues, pets, etc.).",
+        "- Activities that reflect their environment, goals, and values.",
+        "Ensure the story flows naturally, integrating their passions while weaving in the ordinary magic of their ideal world."
     ]
 
-    # Step 4: Shuffle Prompt
+    # **Step 5: Shuffle Prompt Components for Natural Variability**
     prompt = shuffle_prompt_components(prompt_chunks)
 
-    # Step 5: Call OpenAI API
+    # **Step 6: Store the Prompt**
+    story_id = store_story_prompts(test_run_id, persona_id, prompt, story_themes)
+    if not story_id:
+        logger.error(f"Failed to store story prompt for persona_id={persona_id}, test_run_id={test_run_id}")
+        return "Error: Story prompt not stored."
+
+    # **Step 7: Call OpenAI API**
+    metadata = {
+        "model": "gpt-4",
+        "system_content": "You are a vivid and emotionally resonant storyteller.",
+        "max_tokens": 1500,
+        "temperature": 0.8
+    }
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model=metadata["model"],
             messages=[
-                {"role": "system", "content": "You are a vivid and emotionally resonant storyteller."},
+                {"role": "system", "content": metadata["system_content"]},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=1500,
-            temperature=0.8
+            max_tokens=metadata["max_tokens"],
+            temperature=metadata["temperature"]
         )
         story = response.choices[0].message.content.strip()
+        
+        # **Step 8: Store Generated Story**
+        store_story(test_run_id, persona_id, story_id, story, metadata)
         return story
     except Exception as e:
-        story_logger.error(f"Error generating story: {e}")
+        logger.error(f"Error generating story: {e}")
         return "An error occurred while generating the story."
 
-# Example Usage
+# Main Function for Script Execution
 def main():
-    """Example workflow for generating a story."""
-    # Simulated persona data (replace with actual data fetch in production)
-    persona_data = {
-        "input_details": {
-            "core_values": "Growth, connection, and creativity.",
-            "vision_of_success": "Running a thriving art business by the beach.",
-            "morning_routine": "Yoga, journaling, and a cup of coffee by the ocean."
-        },
-        "extracted_themes": {  # Example themes (replace with actual extraction logic)
-            "Career and Contribution": 0.5,
-            "Lifestyle and Environment": 0.8
-        }
-    }
+    parser = argparse.ArgumentParser(description="Generate stories for personas.")
+    parser.add_argument("-p", "--persona_id", type=int, help="The ID of a specific persona.")
+    parser.add_argument("-t", "--test_run_id", type=int, help="The test run ID to process all associated personas.")
+    args = parser.parse_args()
 
-    story = generate_story(persona_data)
-    print("Generated Story:")
-    print(story)
+    if args.test_run_id:
+        try:
+            conn = psycopg2.connect(**DB_CONFIG)
+            cur = conn.cursor()
+            cur.execute("SELECT persona_id FROM personas WHERE test_run_id = %s", (args.test_run_id,))
+            persona_ids = [row[0] for row in cur.fetchall()]
+            cur.close()
+            conn.close()
+            for persona_id in persona_ids:
+                generate_story(args.test_run_id, persona_id)
+        except Exception as e:
+            logger.error(f"Error retrieving personas: {e}")
+    elif args.persona_id:
+        generate_story(None, args.persona_id)
+    else:
+        print("Please provide either a persona_id (-p) or a test_run_id (-t).")
 
 if __name__ == "__main__":
     main()

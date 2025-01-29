@@ -16,7 +16,7 @@ from db_utils import (
     summarize_results
 )
 
-import os
+
 
 def track_progress_from_logs(log_file_path, total_responses):
     """

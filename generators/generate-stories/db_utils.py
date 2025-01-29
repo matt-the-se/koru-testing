@@ -1,22 +1,43 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from collections import Counter
 from config import DB_CONFIG, generate_stories_logger as logger
 
-def fetch_persona_data(persona_id, test_run_id):
+def fetch_persona_data(persona_id=None, test_run_id=None):
     """
-    Fetch data for a specific persona and test run from the database.
+    Fetch data for a specific persona and/or test run from the database.
 
     Args:
-        persona_id (int): The ID of the persona to fetch data for.
-        test_run_id (int): The ID of the test run to filter data.
+        persona_id (int, optional): The ID of the persona to fetch data for.
+        test_run_id (int, optional): The ID of the test run to filter data.
 
     Returns:
         dict: A dictionary containing persona foundation details and a list of inputs with probable themes.
     """
+
+    # If test_run_id is not provided, fetch it from the database
+    if test_run_id is None and persona_id is not None:
+        try:
+            conn = psycopg2.connect(**DB_CONFIG)
+            cur = conn.cursor()
+            cur.execute("SELECT test_run_id FROM personas WHERE persona_id = %s", (persona_id,))
+            result = cur.fetchone()
+            cur.close()
+            conn.close()
+            if result:
+                test_run_id = result[0]
+        except Exception as e:
+            logger.error(f"Error fetching test_run_id for persona_id={persona_id}: {e}")
+            return None
+
+    if test_run_id is None:
+        logger.warning(f"Cannot fetch persona data: test_run_id is None for persona_id={persona_id}")
+        return None
+    
     query = """
         SELECT 
             ps.foundation,
-            ps.test_run_id,
+            pi.test_run_id,
             pi.input_id,
             pi.persona_id,
             pi.prompt_id,
@@ -28,8 +49,24 @@ def fetch_persona_data(persona_id, test_run_id):
         FROM personas ps
         JOIN persona_inputs pi ON ps.persona_id = pi.persona_id
         JOIN prompts p ON pi.prompt_id = p.prompt_id
-        WHERE ps.persona_id = %s AND ps.test_run_id = %s;
     """
+    
+    params = []
+    conditions = []
+
+    # Case 1: Filter by persona_id if provided
+    if persona_id is not None:
+        conditions.append("ps.persona_id = %s")
+        params.append(persona_id)
+
+    # Case 2: Filter by test_run_id if provided
+    if test_run_id is not None:
+        conditions.append("pi.test_run_id = %s")
+        params.append(test_run_id)
+
+    # If any conditions exist, add them to the query
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
 
     try:
         # Connect to the database
@@ -37,14 +74,12 @@ def fetch_persona_data(persona_id, test_run_id):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Execute the query
-        cur.execute(query, (persona_id, test_run_id))
-
-        # Fetch all results
+        cur.execute(query, params)
         rows = cur.fetchall()
 
         # Organize data into a structured format
         if rows:
-            foundation = rows[0]['foundations']  # Shared across all rows for the persona
+            foundation = rows[0]['foundation']  # Shared across all rows for the persona
             test_run = rows[0]['test_run_id']
             inputs = [
                 {
@@ -54,7 +89,7 @@ def fetch_persona_data(persona_id, test_run_id):
                     "extracted_themes": row["extracted_themes"],
                     "extracted_theme_count": row["extracted_theme_count"],
                     "response_stats": row["response_stats"],
-                    "prompt_theme": row["probable_theme"]
+                    "prompt_theme": row["prompt_theme"]
                 }
                 for row in rows
             ]
@@ -143,3 +178,127 @@ def fetch_all_personas_in_test_run(test_run_id):
             cur.close()
         if conn:
             conn.close()
+
+def pull_input_stats(test_run_id, detail_level=None):
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+
+        # Build the query dynamically
+        query = """
+            SELECT extracted_themes
+            FROM persona_inputs
+            WHERE test_run_id = %s AND extracted_themes IS NOT NULL
+        """
+        params = [test_run_id]
+
+        if detail_level:
+            query += " AND detail_level = %s"
+            params.append(detail_level)
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+
+        if not rows:
+            print("No rows matched the query. Check test_run_id and detail_level.")
+            return None
+
+        # Initialize counters and lists
+        chunk_confidences = []
+        response_confidences = []
+        theme_totals = Counter()
+        theme_confidences = {}
+
+        # Process each row
+        for row in rows:
+            extracted_themes = row[0]
+
+            # Count themes and track confidences from chunks
+            if 'chunks' in extracted_themes:
+                for chunk in extracted_themes['chunks']:
+                    if 'confidence' in chunk:
+                        for theme, score in chunk['confidence'].items():
+                            theme_confidences.setdefault(theme, []).append(score)
+                        theme_totals.update(chunk['confidence'].keys())
+                        chunk_confidences.extend(chunk['confidence'].values())
+
+            # Count themes and track confidences from response text
+            if 'response_text' in extracted_themes and 'confidence' in extracted_themes['response_text']:
+                for theme, score in extracted_themes['response_text']['confidence'].items():
+                    theme_confidences.setdefault(theme, []).append(score)
+                theme_totals.update(extracted_themes['response_text']['confidence'].keys())
+                response_confidences.extend(extracted_themes['response_text']['confidence'].values())
+
+        # Fetch test run stats
+        test_run_stats = get_test_run_stats(test_run_id, cursor)
+
+        # Close the connection
+        cursor.close()
+        conn.close()
+
+        return {
+            "test_run_stats": test_run_stats,
+            "chunk_confidences": chunk_confidences,
+            "response_confidences": response_confidences,
+            "theme_totals": theme_totals,
+            "theme_confidences": theme_confidences,
+        }
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
+    
+def get_test_run_stats(test_run_id, cursor):
+    stats = {}
+
+    # Test case JSON
+    cursor.execute("SELECT description FROM test_runs WHERE test_run_id = %s", (test_run_id,))
+    stats['Test Case JSON'] = cursor.fetchone()[0]
+
+    # Number of personas
+    cursor.execute("SELECT COUNT(persona_id) FROM personas WHERE test_run_id = %s", (test_run_id,))
+    stats['Personas'] = cursor.fetchone()[0]
+
+    # Freeform and structured prompts
+    cursor.execute("""
+        SELECT p.prompt_type, COUNT(DISTINCT pi.prompt_id) AS count
+        FROM persona_inputs pi
+        JOIN prompts p ON pi.prompt_id = p.prompt_id
+        WHERE pi.test_run_id = %s
+        GROUP BY p.prompt_type;
+    """, (test_run_id,))
+    prompt_counts = dict(cursor.fetchall())
+    stats['Freeform Prompts'] = prompt_counts.get('freeform_prompts', 0)
+    stats['Structured Prompts'] = prompt_counts.get('structured_prompts', 0)
+
+    # Structured variations
+    cursor.execute("SELECT COUNT(DISTINCT variation_id) FROM persona_inputs WHERE test_run_id = %s", (test_run_id,))
+    stats['Structured Variations'] = cursor.fetchone()[0]
+
+    # Responses generated
+    cursor.execute("SELECT COUNT(response_text) FROM persona_inputs WHERE test_run_id = %s", (test_run_id,))
+    stats['Responses'] = cursor.fetchone()[0]
+
+    # Total chunks
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM (
+            SELECT jsonb_array_elements((extracted_themes->'chunks')::jsonb) AS chunk
+            FROM persona_inputs
+            WHERE test_run_id = %s AND extracted_themes IS NOT NULL
+        ) chunks
+    """, (test_run_id,))
+    stats['Total Chunks'] = cursor.fetchone()[0]
+
+    # Average chunks per response
+    cursor.execute("""
+        SELECT AVG(chunk_count)
+        FROM (
+            SELECT jsonb_array_length(extracted_themes->'chunks') AS chunk_count
+            FROM persona_inputs
+            WHERE test_run_id = %s AND extracted_themes IS NOT NULL
+        ) chunk_counts
+    """, (test_run_id,))
+    stats['Avg Chunks per Response'] = round(cursor.fetchone()[0], 2)
+
+    return stats
