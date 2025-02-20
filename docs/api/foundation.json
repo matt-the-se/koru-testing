@@ -1,0 +1,90 @@
+{
+    "endpoints": {
+        "create_foundation": {
+            "path": "/api/v1/foundation",
+            "method": "POST",
+            "description": "Creates a new test run and persona from foundation data",
+            "request": {
+                "foundation": {
+                    "name": "string",
+                    "age": "string",
+                    "pronoun": "string",
+                    "location": "string",
+                    "relationship_status": "string",
+                    "children": "string",
+                    "pets": "string"
+                }
+            },
+            "response": {
+                "status": "success",
+                "data": {
+                    "test_run_id": "integer",
+                    "persona_id": "integer",
+                    "clarity_scores": {
+                        "overall": 0.1,
+                        "sections": {
+                            "core_vision": 0.0,
+                            "actualization": 0.0,
+                            "freeform": 0.0
+                        },
+                        "themes": {}
+                    }
+                }
+            },
+            "errors": [
+                {
+                    "code": "INVALID_FOUNDATION",
+                    "message": "Missing required foundation fields",
+                    "status_code": 400
+                }
+            ],
+            "notes": [
+                "Creates new test_run and persona",
+                "Sets initial clarity score (10% for foundation)",
+                "Foundation data is stored as JSONB in personas table"
+            ]
+        },
+        "get_session_status": {
+            "path": "/api/v1/sessions/{test_run_id}/status",
+            "method": "GET",
+            "description": "Retrieves current status including clarity scores and section availability",
+            "response": {
+                "status": "success",
+                "data": {
+                    "clarity_scores": {
+                        "overall": 0.1,
+                        "sections": {
+                            "core_vision": 0.0,
+                            "actualization": 0.0,
+                            "freeform": 0.0
+                        },
+                        "themes": {}
+                    },
+                    "sections_available": {
+                        "core_vision": true,
+                        "actualization": false,
+                        "freeform": true
+                    },
+                    "pipeline_status": {
+                        "foundation_complete": true,
+                        "inputs_processed": 0,
+                        "themes_extracted": false,
+                        "clarity_calculated": true
+                    }
+                }
+            },
+            "errors": [
+                {
+                    "code": "SESSION_NOT_FOUND",
+                    "message": "Test run ID not found",
+                    "status_code": 404
+                }
+            ],
+            "notes": [
+                "Actualization section unlocks when core_vision clarity >= 0.4",
+                "Pipeline status tracks processing of user inputs",
+                "Foundation completion gives initial 10% clarity score"
+            ]
+        }
+    }
+} 

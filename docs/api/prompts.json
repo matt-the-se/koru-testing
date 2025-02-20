@@ -1,0 +1,87 @@
+{
+    "endpoints": {
+        "get_prompts": {
+            "path": "/api/v1/prompts",
+            "method": "GET",
+            "description": "Get all available prompts organized by section",
+            "query_params": {
+                "section": {
+                    "type": "string",
+                    "required": false,
+                    "enum": ["core_vision", "actualization", "freeform"],
+                    "description": "Filter prompts by section"
+                }
+            },
+            "response": {
+                "status": "success",
+                "data": {
+                    "sections": {
+                        "core_vision": {
+                            "available": true,
+                            "prompts": [
+                                {
+                                    "prompt_id": "integer",
+                                    "prompt_text": "string",
+                                    "theme": "string",
+                                    "variations": ["string"],
+                                    "type": "core_vision"
+                                }
+                            ]
+                        },
+                        "actualization": {
+                            "available": "boolean",
+                            "prompts": []
+                        },
+                        "freeform": {
+                            "available": true,
+                            "prompts": []
+                        }
+                    }
+                }
+            },
+            "errors": [
+                {
+                    "code": "INVALID_SECTION",
+                    "message": "Invalid section specified",
+                    "status_code": 400
+                }
+            ],
+            "notes": [
+                "Actualization prompts only available when core_vision clarity >= 0.4",
+                "Variations are optional alternative phrasings of the prompt",
+                "Theme is used for clarity score calculation"
+            ]
+        },
+        "get_prompt_variations": {
+            "path": "/api/v1/prompts/{prompt_id}/variations",
+            "method": "GET",
+            "description": "Get variations for a specific prompt",
+            "response": {
+                "status": "success",
+                "data": {
+                    "prompt_id": "integer",
+                    "base_prompt": "string",
+                    "theme": "string",
+                    "variations": [
+                        {
+                            "variation_id": "integer",
+                            "text": "string"
+                        }
+                    ]
+                }
+            },
+            "errors": [
+                {
+                    "code": "PROMPT_NOT_FOUND",
+                    "message": "Prompt ID not found",
+                    "status_code": 404
+                }
+            ],
+            "notes": [
+                "Base prompt is always available even if no variations exist",
+                "Variations maintain the same theme/intent as base prompt",
+                "User can select preferred variation for response"
+            ]
+        }
+    }
+} 

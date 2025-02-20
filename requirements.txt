@@ -1,0 +1,27 @@
+# Database
+psycopg2-binary
+sqlalchemy
+
+# ML/NLP
+sentence-transformers
+scikit-learn
+numpy
+
+# Web Framework (for later)
+flask
+flask-sqlalchemy
+
+# Testing/CLI
+click
+pytest
+
+# Utilities
+python-dotenv
+pyyaml
+pandas
+
+# AI Integration
+openai
+
+# Logging
+python-json-logger 

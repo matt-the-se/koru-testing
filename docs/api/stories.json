@@ -1,0 +1,114 @@
+{
+    "endpoints": {
+        "generate_story": {
+            "path": "/api/v1/stories/generate",
+            "method": "POST",
+            "description": "Generate a story based on processed inputs",
+            "request": {
+                "test_run_id": "integer",
+                "persona_id": "integer",
+                "preferences": {
+                    "length": {
+                        "type": "string",
+                        "enum": ["short", "medium", "long"],
+                        "required": false,
+                        "default": "medium"
+                    },
+                    "tone": {
+                        "type": "string",
+                        "required": false,
+                        "description": "Desired emotional tone"
+                    }
+                }
+            },
+            "response": {
+                "status": "success",
+                "data": {
+                    "story_id": "integer",
+                    "story_content": "string",
+                    "metrics": {
+                        "resonance_score": "float",
+                        "alignment_score": "float",
+                        "richness_score": "float",
+                        "emotional_tone_score": "float",
+                        "story_length": "integer",
+                        "novelty_score": "float",
+                        "variability_score": "float"
+                    },
+                    "story_themes": {
+                        "theme_name": "float"
+                    },
+                    "story_metadata": {
+                        "generation_params": "object",
+                        "theme_weights": "object"
+                    }
+                }
+            },
+            "errors": [
+                {
+                    "code": "INSUFFICIENT_CLARITY",
+                    "message": "Clarity score too low for story generation",
+                    "status_code": 400
+                },
+                {
+                    "code": "MISSING_THEMES",
+                    "message": "Required themes not covered in inputs",
+                    "status_code": 400
+                },
+                {
+                    "code": "GENERATION_FAILED",
+                    "message": "Story generation failed",
+                    "status_code": 500
+                }
+            ],
+            "notes": [
+                "Requires minimum clarity score (0.4)",
+                "Uses extracted themes for story coherence",
+                "Returns quality metrics for generated story"
+            ]
+        },
+        "get_stories": {
+            "path": "/api/v1/stories/{test_run_id}",
+            "method": "GET",
+            "description": "Get all generated stories for a test run",
+            "response": {
+                "status": "success",
+                "data": {
+                    "stories": [
+                        {
+                            "story_id": "integer",
+                            "story_content": "string",
+                            "metrics": {
+                                "resonance_score": "float",
+                                "alignment_score": "float",
+                                "richness_score": "float",
+                                "emotional_tone_score": "float",
+                                "story_length": "integer",
+                                "novelty_score": "float",
+                                "variability_score": "float"
+                            },
+                            "created_at": "string"
+                        }
+                    ],
+                    "test_run_metrics": {
+                        "total_stories": "integer",
+                        "average_resonance": "float",
+                        "average_alignment": "float"
+                    }
+                }
+            },
+            "errors": [
+                {
+                    "code": "TEST_RUN_NOT_FOUND",
+                    "message": "Test run not found",
+                    "status_code": 404
+                }
+            ],
+            "notes": [
+                "Returns all stories with quality metrics",
+                "Includes test run level statistics",
+                "Stories ordered by creation date"
+            ]
+        }
+    }
+} 

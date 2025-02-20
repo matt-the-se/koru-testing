@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Story | Koru{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Build Your Story</h1>
+    
+    <div class="clarity-score">
+        <h3>Clarity Score: {{ clarity_score }}%</h3>
+        <div class="progress-bar-container">
+            <div class="progress-bar" style="width: {{ clarity_score }}%;"></div>
+        </div>
+    </div>
+
+    <div class="intro-text">
+        <p>Based on your input {{ foundation.name }}, we are now ready to generate a story about a day in your life. 
+        As you read this, imagine yourself there and immerse yourself in it. After all, this is your life, 
+        you should be the one living it.</p>
+    </div>
+
+    <div class="story-section">
+        <button id="generate-story" class="generate-button">Generate Story</button>
+        <div id="story-content" class="story-content" style="display: none;"></div>
+    </div>
+
+    <div class="feedback-section">
+        <textarea id="feedback" placeholder="Leave feedback..." rows="3"></textarea>
+        <button id="submit-feedback">Submit Feedback</button>
+    </div>
+
+    <div class="navigation-buttons">
+        <button type="button" class="back-button" id="back-to-actualization">Go Back</button>
+        <button type="button" class="reset-button" id="start-over">Start Over</button>
+        <button type="button" class="finish-button" id="finish" disabled title="Please generate your story first">
+            Finish
+        </button>
+    </div>
+</div>
+
+<div id="confirm-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <p>Are you sure? This will reset your foundation and all your responses.</p>
+        <div class="modal-buttons">
+            <button id="confirm-yes">Yes</button>
+            <button id="confirm-no">No</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/stories.js') }}"></script>
+{% endblock %} 

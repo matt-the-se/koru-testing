@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Core Vision | Koru{% endblock %}
+
+{% block content %}
+<div class="core-vision-container">
+    <h1>Core Vision</h1>
+    
+    <div class="clarity-score">
+        Clarity Score: <span id="clarity-percentage">{{ clarity_score }}%</span>
+    </div>
+
+    <div class="intro-text">
+        <p>Welcome {{ foundation.name }}! Here is where you tell us all about yourself. 
+        The answers to these questions will provide the foundation of your day-in-the-life story. 
+        (remember, you are now your best self {{ foundation.name }}. answer these in first-person, 
+        as your best-self)</p>
+    </div>
+
+    <div class="instructions">
+        <p>The questions are structured in a few different ways, please select the format that 
+        most resonates with you. Answer these questions as thoroughly as you feel comfortable. 
+        The more you tell us about yourself, the better your story will be.</p>
+    </div>
+
+    <form id="core-vision-form">
+        {% for prompt in prompts %}
+        <div class="prompt-group">
+            <h3>{{ prompt.theme }}</h3>
+            
+            <div class="prompt-variations">
+                {% for variation in [prompt.base_prompt] + prompt.variations %}
+                <div class="prompt-variation">
+                    <input type="radio" 
+                           name="prompt_{{ prompt.prompt_id }}" 
+                           id="variation_{{ prompt.prompt_id }}_{{ loop.index }}"
+                           value="{{ loop.index0 }}"
+                           {% if loop.first %}checked{% endif %}>
+                    <label for="variation_{{ prompt.prompt_id }}_{{ loop.index }}">
+                        {{ variation }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="response-area">
+                <textarea name="response_{{ prompt.prompt_id }}" 
+                         rows="5" 
+                         placeholder="Your response... (minimum 50 characters)"
+                         required
+                         minlength="50"></textarea>
+            </div>
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="next-button" id="submit-core-vision">
+            Next: Actualization
+        </button>
+    </form>
+</div>
+
+<!-- Debug output -->
+<div style="background: #eee; padding: 10px; margin: 20px 0;">
+    <h4>Debug Info:</h4>
+    Number of prompts: {{ prompts|length }}<br>
+    {% for prompt in prompts %}
+    Prompt: {{ prompt.base_prompt }}<br>
+    {% endfor %}
+</div>
+
+<script src="{{ url_for('static', filename='js/core_vision.js') }}"></script>
+{% endblock %} 

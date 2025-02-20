@@ -1,0 +1,165 @@
+{
+    "endpoints": {
+        "submit_response": {
+            "path": "/api/v1/responses",
+            "method": "POST",
+            "description": "Submit a response to a prompt and trigger processing pipeline",
+            "request": {
+                "test_run_id": "integer",
+                "prompt_id": "integer",
+                "response_text": "string",
+                "variation_id": {
+                    "type": "integer",
+                    "required": false,
+                    "description": "ID of prompt variation used, if any"
+                }
+            },
+            "response": {
+                "status": "success",
+                "data": {
+                    "input_id": "integer",
+                    "pipeline_status": {
+                        "chunking_complete": "boolean",
+                        "themes_extracted": "boolean",
+                        "clarity_calculated": "boolean"
+                    },
+                    "clarity_scores": {
+                        "overall": "float",
+                        "sections": {
+                            "core_vision": "float",
+                            "actualization": "float",
+                            "freeform": "float"
+                        },
+                        "themes": {
+                            "theme_name": "float"
+                        }
+                    }
+                }
+            },
+            "errors": [
+                {
+                    "code": "INVALID_TEST_RUN",
+                    "message": "Test run not found",
+                    "status_code": 404
+                },
+                {
+                    "code": "INVALID_PROMPT",
+                    "message": "Prompt ID not found",
+                    "status_code": 404
+                },
+                {
+                    "code": "SECTION_LOCKED",
+                    "message": "Section not available yet",
+                    "status_code": 400
+                }
+            ],
+            "notes": [
+                "Triggers input processing pipeline",
+                "Updates clarity scores after processing",
+                "Returns latest clarity status"
+            ]
+        },
+        "get_responses": {
+            "path": "/api/v1/responses/{test_run_id}",
+            "method": "GET",
+            "description": "Get all responses for a test run",
+            "response": {
+                "status": "success",
+                "data": {
+                    "responses": [
+                        {
+                            "input_id": "integer",
+                            "prompt_id": "integer",
+                            "prompt_text": "string",
+                            "response_text": "string",
+                            "extracted_themes": {
+                                "chunks": [
+                                    {
+                                        "text": "string",
+                                        "confidence": {
+                                            "theme_name": "float"
+                                        }
+                                    }
+                                ],
+                                "response_text": {
+                                    "confidence": {
+                                        "theme_name": "float"
+                                    },
+                                    "top_theme": "string",
+                                    "top_confidence": "float"
+                                }
+                            },
+                            "section": "string",
+                            "created_at": "string"
+                        }
+                    ]
+                }
+            },
+            "errors": [
+                {
+                    "code": "TEST_RUN_NOT_FOUND",
+                    "message": "Test run not found",
+                    "status_code": 404
+                }
+            ],
+            "notes": [
+                "Returns processed responses with theme data",
+                "Includes original prompts for context",
+                "Ordered by creation date"
+            ]
+        },
+        "record_prompt_preference": {
+            "path": "/api/v1/responses/{input_id}/preference",
+            "method": "POST",
+            "description": "Record which prompt or variation the user preferred",
+            "request": {
+                "persona_id": "integer",
+                "prompt_id": "integer",
+                "selection_type": {
+                    "type": "string",
+                    "enum": ["base_prompt", "variation"],
+                    "description": "Whether user preferred base prompt or a variation"
+                },
+                "variation_id": {
+                    "type": "integer",
+                    "required": false,
+                    "description": "ID of selected variation if variation was chosen"
+                },
+                "reason": {
+                    "type": "string",
+                    "required": false,
+                    "description": "Optional user feedback on why this prompt resonated"
+                }
+            },
+            "response": {
+                "status": "success",
+                "data": {
+                    "user_prompt_prefs": {
+                        "prompt_id": "integer",
+                        "selection_type": "string",
+                        "variation_id": "integer",
+                        "reason": "string",
+                        "recorded_at": "string"
+                    }
+                }
+            },
+            "errors": [
+                {
+                    "code": "INVALID_INPUT",
+                    "message": "Input ID not found",
+                    "status_code": 404
+                },
+                {
+                    "code": "INVALID_VARIATION",
+                    "message": "Variation ID not found for this prompt",
+                    "status_code": 400
+                }
+            ],
+            "notes": [
+                "Used for prompt optimization and analytics",
+                "Helps identify most effective prompt phrasings",
+                "Can be used to personalize future prompt selection"
+            ]
+        }
+    }
+} 

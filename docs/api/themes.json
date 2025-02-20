@@ -1,0 +1,93 @@
+{
+    "endpoints": {
+        "get_theme_analysis": {
+            "path": "/api/v1/themes/{test_run_id}",
+            "method": "GET",
+            "description": "Get detailed theme analysis for a test run",
+            "response": {
+                "status": "success",
+                "data": {
+                    "themes": {
+                        "aggregate_themes": {
+                            "theme_name": "float"
+                        },
+                        "complete_response_themes": {
+                            "theme_name": "float"
+                        },
+                        "probable_theme": {
+                            "theme": "string",
+                            "confidence": "float"
+                        },
+                        "keyword_matches": {
+                            "theme_name": "integer"
+                        }
+                    },
+                    "clarity_metrics": {
+                        "chunk_scores": [
+                            {
+                                "theme": "string",
+                                "score": "float"
+                            }
+                        ],
+                        "completeness_bucket": "float",
+                        "foundation_complete": "boolean"
+                    }
+                }
+            },
+            "errors": [
+                {
+                    "code": "TEST_RUN_NOT_FOUND",
+                    "message": "Test run not found",
+                    "status_code": 404
+                },
+                {
+                    "code": "NO_THEMES_EXTRACTED",
+                    "message": "No theme data available yet",
+                    "status_code": 404
+                }
+            ],
+            "notes": [
+                "Aggregates themes across all responses",
+                "Shows theme extraction confidence scores",
+                "Used for clarity score calculation"
+            ]
+        },
+        "get_theme_progress": {
+            "path": "/api/v1/themes/{test_run_id}/progress",
+            "method": "GET",
+            "description": "Get theme completion progress by section",
+            "response": {
+                "status": "success",
+                "data": {
+                    "sections": {
+                        "core_vision": {
+                            "required_themes": ["string"],
+                            "completed_themes": ["string"],
+                            "missing_themes": ["string"],
+                            "clarity_score": "float"
+                        },
+                        "actualization": {
+                            "required_themes": ["string"],
+                            "completed_themes": ["string"],
+                            "missing_themes": ["string"],
+                            "clarity_score": "float"
+                        }
+                    },
+                    "overall_progress": "float"
+                }
+            },
+            "errors": [
+                {
+                    "code": "TEST_RUN_NOT_FOUND",
+                    "message": "Test run not found",
+                    "status_code": 404
+                }
+            ],
+            "notes": [
+                "Shows which themes need more detail",
+                "Helps guide users to complete sections",
+                "Used to determine section availability"
+            ]
+        }
+    }
+} 

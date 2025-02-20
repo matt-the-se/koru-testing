@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Actualization | Koru{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Actualization</h1>
+    
+    <div class="clarity-score">
+        <h3>Clarity Score: {{ clarity_score }}%</h3>
+        <div class="progress-bar-container">
+            <div class="progress-bar" style="width: {{ clarity_score }}%"></div>
+        </div>
+    </div>
+
+    <div class="intro-text">
+        <p>Welcome back {{ foundation.name }}! Actualization is where you can provide details about yourself 
+        to bring your story to life. Answers for these questions are optional, but it's highly recommended 
+        that you fill out at least a few of them that really speak to you.</p>
+    </div>
+
+    <form id="actualization-form">
+        {% for prompt in prompts %}
+        <div class="prompt-group">
+            <h3>{{ prompt.base_prompt }}</h3>
+            
+            <div class="variations">
+                {% for variation in prompt.variations %}
+                <div class="variation">
+                    <input type="radio" 
+                           name="variation_{{ prompt.prompt_id }}" 
+                           value="{{ loop.index }}"
+                           {% if loop.first %}checked{% endif %}>
+                    <label>{{ variation }}</label>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="response-area">
+                <textarea 
+                    name="response_{{ prompt.prompt_id }}"
+                    rows="5"
+                    placeholder="Your response..."
+                    data-prompt-id="{{ prompt.prompt_id }}"></textarea>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="navigation-buttons">
+            <button type="button" class="back-button" id="back-to-core-vision">Go Back</button>
+            <button type="button" class="reset-button" id="start-over">Start Over</button>
+            <button type="button" class="next-button" id="next">
+                Next
+            </button>
+        </div>
+    </form>
+</div>
+
+<script src="{{ url_for('static', filename='js/actualization.js') }}"></script>
+{% endblock %} 
