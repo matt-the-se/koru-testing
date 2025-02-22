@@ -33,6 +33,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Load existing responses
+    async function loadExistingResponses() {
+        try {
+            const response = await fetch(`/api/v1/responses/${test_run_id}`);
+            const data = await response.json();
+            
+            if (data.responses) {
+                data.responses.forEach(response => {
+                    const textarea = document.querySelector(`textarea[data-prompt-id="${response.prompt_id}"][data-variation-id="${response.variation_id}"]`);
+                    if (textarea) {
+                        textarea.value = response.response_text;
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error loading responses:', error);
+        }
+    }
+
     // Handle back button
     backButton.addEventListener('click', async function(e) {
         e.preventDefault();
@@ -150,4 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
             throw error;
         }
     }
+
+    // Load existing responses when page loads
+    loadExistingResponses();
 });

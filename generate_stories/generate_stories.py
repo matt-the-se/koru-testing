@@ -144,6 +144,7 @@ def generate_story(test_run_id, persona_id):
     secondary_themes = persona_data["secondary_themes"]
     passion_scores = persona_data["passion_scores"]  # Use passion scores
     input_details = persona_data["inputs"]
+    foundation = persona_data["foundation"]  # Get foundation data
 
     # **Step 2.1: Select the Most Passionate Inputs**
     top_passionate_inputs = sorted(
@@ -164,9 +165,9 @@ def generate_story(test_run_id, persona_id):
     }
 
     # **Step 3: Define Story Structure**
-    day_types = ["Routine", "Adventure", "Work/Productivity", "Social", "Challenges"]
-    events = ["A major breakthrough", "A surprise visit", "A reflective moment", "A minor setback", "A celebration"]
-    special_moments = ["A deep conversation", "An unexpected joy", "A lesson learned", "A moment of gratitude"]
+    day_types = ["Routine", "Adventure", "Work/Productivity", "Social", "Challenges", "Relaxation", "Vacation"]
+    events = ["A major breakthrough", "A surprise visit", "A reflective moment", "A minor setback", "A celebration",]
+    special_moments = ["A deep conversation", "An unexpected joy", "A lesson learned", "A moment of gratitude", "A moment of pride"]
 
     day_type = random.choice(day_types)
     event = random.choice(events)
@@ -174,15 +175,18 @@ def generate_story(test_run_id, persona_id):
 
     # **Step 4: Construct the Prompt**
     prompt_chunks = [
-        f"Primary Theme: {primary_theme}",
-        f"Secondary Themes: {', '.join(secondary_themes)}",
+        f"Primary story theme: {primary_theme}",
+        f"Secondary story themes: {', '.join(secondary_themes)}",
         f"User's Most Passionate Inputs:\n" + "\n".join(key_details),
         f"Write a detailed narrative of their {day_type.lower()} day, incorporating {event} and {special_moment}. Include:",
         "- Sensory details (sights, sounds, smells, etc.).",
         "- Emotional moments (gratitude, joy, resilience, etc.).",
         "- Interactions with consistent characters (friends, family, colleagues, pets, etc.).",
         "- Activities that reflect their environment, goals, and values.",
-        "Ensure the story flows naturally, integrating their passions while weaving in the ordinary magic of their ideal world."
+        "The story should be told as if you're telling the person about their day because youwere there with them.",
+        "Ensure the story flows naturally, integrating their passions while weaving in the ordinary magic of their world.",
+        f"Be sure to incorporate details about the person whose story you are telling. The person whose story you are telling is named {foundation['name']}, age {foundation['age']}, who uses {foundation['pronoun']} pronouns. " 
+        f"They live {foundation['location']}, are {foundation['relationship']}, {foundation['children']}, and have {foundation['pets']}."
     ]
 
     # **Step 5: Shuffle Prompt Components for Natural Variability**
