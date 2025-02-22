@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, current_app, render_template
-from ..pipeline_utils import run_story_generation
+from ..pipeline_utils import calculate_clarity  # Only need clarity calculation
 
 bp = Blueprint('foundation', __name__, url_prefix='/api/v1')
 
@@ -17,33 +17,28 @@ def create_foundation():
         
         # Create persona and test run
         persona_id, test_run_id = current_app.db.create_persona_from_foundation(
-            foundation_data['foundation']
+            foundation_data["foundation"]
         )
         current_app.logger.info(f"Created persona {persona_id} with test run {test_run_id}")
         
-        # Generate stories using pipeline_utils
-        story = run_story_generation(persona_id, test_run_id)
-        story_result = {
-            "status": "success" if not story.startswith("Error:") else "error",
-            "data": {"story": story} if not story.startswith("Error:") else {"error": story[7:]}
+        # Initialize clarity scores with empty structure
+        clarity_scores = {
+            "overall": 0.0,
+            "sections": {
+                "freeform": 0.0,
+                "core_vision": 0.0,
+                "actualization": 0.0
+            },
+            "themes": {},
+            "foundation_complete": True
         }
-        
-        if story_result["status"] == "error":
-            raise Exception(story_result["data"]["error"])
-            
-        # Set initial clarity score
-        current_app.db.set_foundation_clarity(test_run_id)
-        
-        # Get available prompts
-        prompts = current_app.db.get_available_prompts()
+        current_app.db.set_foundation_clarity(test_run_id, clarity_scores)
         
         return jsonify({
-            "status": "success",
+            "status": "success", 
             "data": {
                 "test_run_id": test_run_id,
-                "persona_id": persona_id,
-                "available_prompts": prompts,
-                "story_generation": story_result["data"]
+                "persona_id": persona_id
             }
         })
         

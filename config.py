@@ -17,7 +17,8 @@ INPUT_CLASSIFIER_DIR = os.path.join(BASE_DIR, "input_classifier")
 INPUT_PROCESSING_DIR = os.path.join(BASE_DIR, "input_processing")
 SHARED_DIR = os.path.join(BASE_DIR, "shared")
 DEPENDENCIES_DIR = os.path.join(BASE_DIR, "dependencies")
-STORY_QUALITY_DIR = os.path.join(BASE_DIR, "story-quality")
+STORY_QUALITY_DIR = os.path.join(BASE_DIR, "story_quality")
+GENERATE_STORIES_DIR = os.path.join(BASE_DIR, "generate_stories")
 
 # Add to Python path at config load time
 sys.path.extend([
@@ -29,8 +30,8 @@ sys.path.extend([
 # Subdirectory and File Paths
 SYNONYM_LIBRARY_PATH = os.path.join(SHARED_DIR, "synonym_library.json")
 SENTIMENT_LIB_DIR = os.path.join(SHARED_DIR, "twitter-roBERTa-base-sentiment")
-TEST_CASES_DIR = os.path.join(SHARED_DIR, "test-cases")
-PERSONA_CREATION_DIR = os.path.join(SHARED_DIR, "persona-creation")
+TEST_CASES_DIR = os.path.join(SHARED_DIR, "test_cases")
+PERSONA_CREATION_DIR = os.path.join(SHARED_DIR, "persona_creation")
 
 # API Keys
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
@@ -65,11 +66,11 @@ PROBABLE_THEME_BOOST = 1.1
 os.makedirs(LOGS_DIR, exist_ok=True)
 
 # Original Logging Configuration
-GENERATE_PERSONAS_LOG = os.path.join(LOGS_DIR, "generate-personas.log")
-GENERATE_STORIES_LOG = os.path.join(LOGS_DIR, "generate-stories.log")
-INPUT_CLASSIFIER_LOG = os.path.join(LOGS_DIR, "input-classifier.log")
-INPUT_PROCESSING_LOG = os.path.join(LOGS_DIR, "input-processing.log")
-MAIN_LOG = os.path.join(LOGS_DIR, "koru-testing.log")
+GENERATE_PERSONAS_LOG = os.path.join(LOGS_DIR, "generate_personas.log")
+GENERATE_STORIES_LOG = os.path.join(LOGS_DIR, "generate_stories.log")
+INPUT_CLASSIFIER_LOG = os.path.join(LOGS_DIR, "input_classifier.log")
+INPUT_PROCESSING_LOG = os.path.join(LOGS_DIR, "input_processing.log")
+MAIN_LOG = os.path.join(LOGS_DIR, "koru_testing.log")
 
 # Original Log Aggregation Setup
 generate_personas_logger = setup_logger("generate_personas", GENERATE_PERSONAS_LOG)
@@ -124,5 +125,3 @@ WEBAPP_LOGGING_CONFIG = {
 # Initialize webapp logging
 dictConfig(WEBAPP_LOGGING_CONFIG)
 webapp_logger = logging.getLogger('webapp')
-
-GENERATE_STORIES_DIR = os.path.join(BASE_DIR, 'generate-stories')

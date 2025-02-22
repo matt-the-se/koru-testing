@@ -10,7 +10,6 @@ from openai import OpenAI
 from config import OPENAI_API_KEY, generate_stories_logger as logger, DB_CONFIG
 from persona_profile_builder import build_persona_profile
 import uuid
-
 # Near where you create the OpenAI client
 logger.info(f"API Key being used (first 8 chars): {OPENAI_API_KEY[:8] if OPENAI_API_KEY else 'None'}")
 client = OpenAI(api_key=OPENAI_API_KEY)

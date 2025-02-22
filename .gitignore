@@ -1,6 +1,7 @@
 /old
 /logs
 /koru
+/.specstory
 shared/glove.6B.100d.word2vec.txt
 shared/twitter-roberta-base-sentiment
 

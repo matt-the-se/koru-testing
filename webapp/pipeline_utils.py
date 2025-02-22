@@ -1,7 +1,11 @@
 import os
 import sys
 import importlib
+from pathlib import Path
 from config import INPUT_PROCESSING_DIR, INPUT_CLASSIFIER_DIR, GENERATE_STORIES_DIR
+
+# Get base directory and construct paths
+BASE_DIR = Path(__file__).parent.parent
 
 def safe_import(module_path):
     """Safely import a module given its path"""

@@ -2,7 +2,7 @@ import json
 import logging
 from openai import OpenAI
 from persona_test_loader import generate_persona_foundation, store_persona
-from db_utils import insert_response 
+from gp_db_utils import insert_response 
 from config import OPENAI_API_KEY
 
 client = OpenAI(api_key=OPENAI_API_KEY)

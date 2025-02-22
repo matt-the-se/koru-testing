@@ -7,7 +7,10 @@
     <h1>Core Vision</h1>
     
     <div class="clarity-score">
-        Clarity Score: <span id="clarity-percentage">{{ clarity_score }}%</span>
+        <h3>Clarity Score: {{ clarity_score }}%</h3>
+        <div class="progress-bar-container">
+            <div class="progress-bar" style="width: {{ clarity_score }}%"></div>
+        </div>
     </div>
 
     <div class="intro-text">
@@ -53,9 +56,11 @@
         </div>
         {% endfor %}
 
-        <button type="submit" class="next-button" id="submit-core-vision">
-            Next: Actualization
-        </button>
+        <div class="core-vision-button-container">
+            <button type="submit" class="next-button" id="submit-core-vision">
+                Next: Actualization
+            </button>
+        </div>
     </form>
 </div>
 

@@ -20,19 +20,30 @@
     </div>
 
     <div class="story-section">
-        <button id="generate-story" class="generate-button">Generate Story</button>
-        <div id="story-content" class="story-content" style="display: none;"></div>
+        <button id="generate-story" class="next-button generate-button">
+            Generate<br>Story
+        </button>
+        <div id="story-content" class="story-content" style="display: none;">
+            <div class="story-controls">
+                <button id="listen-story" class="next-button listen-button">
+                    <i class="fas fa-play"></i> Listen
+                </button>
+            </div>
+            <div class="story-text"></div>
+        </div>
     </div>
 
     <div class="feedback-section">
-        <textarea id="feedback" placeholder="Leave feedback..." rows="3"></textarea>
-        <button id="submit-feedback">Submit Feedback</button>
+        <div class="feedback-input-container">
+            <textarea id="feedback" placeholder="Leave feedback..." rows="3"></textarea>
+            <button id="submit-feedback" class="next-button">Submit Feedback</button>
+        </div>
     </div>
 
     <div class="navigation-buttons">
-        <button type="button" class="back-button" id="back-to-actualization">Go Back</button>
-        <button type="button" class="reset-button" id="start-over">Start Over</button>
-        <button type="button" class="finish-button" id="finish" disabled title="Please generate your story first">
+        <button type="button" class="next-button" id="back-to-actualization">Go Back</button>
+        <button type="button" class="next-button" id="start-over">Start Over</button>
+        <button type="button" class="next-button" id="finish" disabled title="Please generate your story first">
             Finish
         </button>
     </div>

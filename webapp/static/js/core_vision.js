@@ -136,6 +136,12 @@ document.addEventListener('DOMContentLoaded', function() {
             responsesChanged = true;
         });
     });
+    // Also track variation changes
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            responsesChanged = true;
+        });
+    });
 
     // Handle form submission (Next button)
     form.addEventListener('submit', async function(e) {
@@ -148,6 +154,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Only run pipeline if responses changed
             if (responsesChanged) {
+                // Clear existing story since inputs are changing
+                await fetch(`/api/v1/story/clear/${test_run_id}`, {
+                    method: 'POST'
+                });
+                
                 await fetch('/api/v1/pipeline/run', {
                     method: 'POST',
                     headers: {

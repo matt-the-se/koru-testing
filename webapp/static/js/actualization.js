@@ -26,6 +26,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Also track variation changes
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            responsesChanged = true;
+        });
+    });
+
     // Handle back button
     backButton.addEventListener('click', async function(e) {
         e.preventDefault();
@@ -58,13 +65,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle form submission
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        submitButton.textContent = 'Processing...';
+        submitButton.disabled = true;
         
         try {
             await saveResponses();
             
             // Only run pipeline if responses changed
             if (responsesChanged) {
+                // Clear existing story since inputs are changing
+                await fetch(`/api/v1/story/clear/${test_run_id}`, {
+                    method: 'POST'
+                });
+                
                 await fetch('/api/v1/pipeline/run', {
                     method: 'POST',
                     headers: {
@@ -81,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error:', error);
             alert('There was an error processing your responses. Please try again.');
-            submitButton.textContent = 'Next: Create My Story';
+            submitButton.disabled = false;
         }
     });
 
@@ -138,4 +150,4 @@ document.addEventListener('DOMContentLoaded', function() {
             throw error;
         }
     }
-}); 
+});

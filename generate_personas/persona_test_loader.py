@@ -2,7 +2,7 @@ import os
 import json
 import random
 from config import TEST_CASES_DIR, PERSONA_CREATION_DIR
-from db_utils import insert_persona_foundation
+from gp_db_utils import insert_persona_foundation
 
 
 def load_test_cases(logger, file_name, directory=TEST_CASES_DIR, validate_test_cases=False):

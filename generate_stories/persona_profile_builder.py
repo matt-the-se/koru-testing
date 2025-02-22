@@ -8,7 +8,7 @@ import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 from collections import Counter
 from config import DB_CONFIG, generate_stories_logger as logger
-from db_utils import fetch_persona_data, pull_input_stats
+from gs_db_utils import fetch_persona_data, pull_input_stats
 
 # Check if VADER lexicon is already installed before downloading
 try:

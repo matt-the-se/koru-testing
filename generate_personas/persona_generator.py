@@ -9,12 +9,7 @@ import time
 from persona_test_loader import load_test_cases
 from response_builder import process_personas_and_responses
 from config import generate_personas_logger as logger, TEST_CASES_DIR, GENERATE_PERSONAS_LOG
-from db_utils import (
-    connect_db,
-    create_test_run_id,
-    fetch_prompts,
-    summarize_results
-)
+from gp_db_utils import connect_db, create_test_run_id, fetch_prompts, summarize_results
 
 
 

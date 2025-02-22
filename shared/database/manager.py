@@ -65,13 +65,15 @@ class DatabaseManager:
             return WEBAPP_DB_CONFIG
         return DB_CONFIG
 
-    @contextmanager
     def get_connection(self):
-        """Raw SQL connection for existing code"""
+        """Get a database connection with proper error handling"""
         try:
-            yield self.connection
-        finally:
-            pass
+            conn = psycopg2.connect(**self.config)
+            conn.autocommit = True  # Prevent transaction issues
+            return conn
+        except Exception as e:
+            self.logger.error(f"Error connecting to database: {e}")
+            raise
 
     @contextmanager
     def get_session(self):
@@ -306,19 +308,20 @@ class DatabaseManager:
                     current_app.logger.error(f"Error getting clarity scores: {e}")
                     return {}
 
-    def set_foundation_clarity(self, test_run_id: int):
+    def set_foundation_clarity(self, test_run_id: int, clarity_scores: dict = None):
         """Set initial clarity score after foundation creation"""
-        foundation_scores = {
-            "overall": 0.0,
-            "sections": {
-                "core_vision": 0.0,
-                "actualization": 0.0,
-                "freeform": 0.0
-            },
-            "themes": {},
-            "foundation_complete": True
-        }
-        return self.update_clarity_scores(test_run_id, foundation_scores)
+        if clarity_scores is None:
+            clarity_scores = {
+                "overall": 0.0,
+                "sections": {
+                    "core_vision": 0.0,
+                    "actualization": 0.0,
+                    "freeform": 0.0
+                },
+                "themes": {},
+                "foundation_complete": True
+            }
+        return self.update_clarity_scores(test_run_id, clarity_scores)
 
     def get_clarity_status(self, test_run_id: int) -> Dict:
         """Get current clarity scores and section availability"""
@@ -652,44 +655,43 @@ class DatabaseManager:
                     } for row in rows
                 } 
 
-    def store_response(self, test_run_id: int, prompt_id: int, response_text: str, variation_id: int = 0) -> None:
-        """Store a response in the database"""
+    def store_response(self, test_run_id, persona_id, variation_id, response_text):
+        """Store a response, overwriting any existing response for this combination"""
         with self.get_connection() as conn:
             with conn.cursor() as cur:
-                # First delete any existing responses for this prompt and test run
+                # First delete any existing response for this combination
                 cur.execute("""
-                    DELETE FROM persona_inputs 
-                    WHERE test_run_id = %s AND prompt_id = %s
-                """, (test_run_id, prompt_id))
+                    DELETE FROM user_inputs 
+                    WHERE test_run_id = %s 
+                    AND persona_id = %s 
+                    AND variation_id = %s
+                """, (test_run_id, persona_id, variation_id))
                 
+                # Then insert the new response
                 cur.execute("""
-                    INSERT INTO persona_inputs 
-                    (test_run_id, prompt_id, response_text, variation_id)
+                    INSERT INTO user_inputs (test_run_id, persona_id, variation_id, response_text)
                     VALUES (%s, %s, %s, %s)
-                """, (test_run_id, prompt_id, response_text, variation_id))
+                    RETURNING input_id
+                """, (test_run_id, persona_id, variation_id, response_text))
+                
+                input_id = cur.fetchone()[0]
                 conn.commit()
+                return input_id
 
-    def store_responses(self, test_run_id: int, responses: List[Dict]) -> None:
-        """Store multiple responses in the database"""
+    def update_input_chunks(self, input_id, chunks):
+        """Update chunks for an input, overwriting existing chunks"""
         with self.get_connection() as conn:
             with conn.cursor() as cur:
-                # First clear all existing responses for this test run
-                cur.execute("""
-                    DELETE FROM persona_inputs 
-                    WHERE test_run_id = %s
-                """, (test_run_id,))
+                # Delete existing chunks
+                cur.execute("DELETE FROM input_chunks WHERE input_id = %s", (input_id,))
                 
-                for response in responses:
+                # Insert new chunks
+                for chunk in chunks:
                     cur.execute("""
-                        INSERT INTO persona_inputs 
-                        (test_run_id, prompt_id, response_text, variation_id)
-                        VALUES (%s, %s, %s, %s)
-                    """, (
-                        test_run_id,
-                        response['prompt_id'],
-                        response['response_text'],
-                        response.get('variation_id', 0)
-                    ))
+                        INSERT INTO input_chunks (input_id, chunk_text, chunk_metadata)
+                        VALUES (%s, %s, %s)
+                    """, (input_id, chunk['text'], json.dumps(chunk.get('metadata', {}))))
+                
                 conn.commit()
 
     def get_persona_id_by_test_run(self, test_run_id):
@@ -705,38 +707,116 @@ class DatabaseManager:
                 return result[0] if result else None 
     
     def get_story_content(self, test_run_id):
-        """
-        Fetch the story content for a given test run ID.
-        
-        Args:
-            test_run_id (str): The test run ID
-            
-        Returns:
-            dict: Story data with status and content
-        """
+        """Fetch the most recent story content for a given test run ID"""
         try:
-            conn = psycopg2.connect(**DB_CONFIG)
-            cur = conn.cursor()
-            
-            cur.execute("""
-                SELECT story_content 
-                FROM stories 
-                WHERE test_run_id = %s
-            """, (test_run_id,))
-            
-            result = cur.fetchone()
-            
-            cur.close()
-            conn.close()
-            
-            if result is None:
-                return {"status": "pending", "content": None}
-                
-            return {
-                "status": "complete",
-                "content": result[0]
-            }
-            
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT story_content, generated_at, story_id 
+                        FROM stories 
+                        WHERE test_run_id = %s
+                        ORDER BY story_id DESC
+                        LIMIT 1
+                    """, (test_run_id,))
+                    
+                    result = cur.fetchone()
+                    
+                    if result is None:
+                        return {"status": "pending", "content": None}
+                        
+                    return {
+                        "status": "complete",
+                        "content": result[0],
+                        "generated_at": result[1],
+                        "story_id": result[2]
+                    }
+                    
         except Exception as e:
-            logger.error(f"Error fetching story: {e}")
+            self.logger.error(f"Error fetching story: {e}")
             return {"status": "error", "content": None}
+
+    def get_last_input_change(self, test_run_id):
+        """Get timestamp of last input change"""
+        with self.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT MAX(created_at)
+                    FROM persona_inputs
+                    WHERE test_run_id = %s
+                """, (test_run_id,))
+                return cur.fetchone()[0]
+
+    def clear_story(self, test_run_id):
+        """Clear the story content when inputs are updated"""
+        with self.get_connection() as conn:
+            with conn.cursor() as cur:
+                try:
+                    # First check if there's an existing story with content
+                    cur.execute("""
+                        SELECT story_id 
+                        FROM stories 
+                        WHERE test_run_id = %s 
+                        AND story_content IS NOT NULL
+                        ORDER BY story_id DESC
+                        LIMIT 1
+                    """, (test_run_id,))
+                    
+                    # Only clear if there's existing content
+                    if cur.fetchone():
+                        # Insert new null story to preserve history
+                        cur.execute("""
+                            INSERT INTO stories 
+                            (test_run_id, story_content, generated_at)
+                            VALUES (%s, NULL, NULL)
+                        """, (test_run_id,))
+                        conn.commit()
+                except Exception as e:
+                    conn.rollback()
+                    raise
+
+    def get_story_metadata(self, test_run_id):
+        with self.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT story_id, status, story_content, generated_at, updated_at
+                    FROM stories 
+                    WHERE test_run_id = %s
+                    ORDER BY generated_at DESC 
+                    LIMIT 1
+                """, (test_run_id,))
+                result = cur.fetchone()
+                if result:
+                    return {
+                        'story_id': result[0],
+                        'status': result[1],
+                        'content': result[2],
+                        'generated_at': result[3],
+                        'updated_at': result[4]
+                    }
+                return None
+
+    def store_story(self, test_run_id, persona_id, story_content, status='complete'):
+        with self.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO stories 
+                        (test_run_id, persona_id, story_content, status, generated_at, updated_at)
+                    VALUES 
+                        (%s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    RETURNING story_id
+                """, (test_run_id, persona_id, story_content, status))
+                story_id = cur.fetchone()[0]
+                conn.commit()
+                return story_id
+
+    def clear_story(self, test_run_id):
+        with self.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE stories 
+                    SET status = 'pending', 
+                        story_content = NULL,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE test_run_id = %s
+                """, (test_run_id,))
+                conn.commit()

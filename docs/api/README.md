@@ -17,3 +17,28 @@ All endpoints are relative to: `/api/v1`
 
 ## Common Response Formats
 All responses follow the format:
+
+json
+{
+    "status": "success|error",
+    "data": { ... },
+    "error": {
+    "code": "string",
+    "message": "string"
+}
+}
+
+## Error Codes
+
+- `400`: Bad Request - Invalid input
+- `401`: Unauthorized - Missing or invalid authentication
+- `404`: Not Found - Resource not found
+- `500`: Internal Server Error - Unexpected error
+
+## Endpoints
+- [Foundation & Session Management](foundation.md)
+- [Prompt Management](prompts.md)
+- [User Responses](responses.md)
+- [Theme Analysis](themes.md)
+- [Story Generation](stories.md)
+
