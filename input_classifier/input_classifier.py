@@ -13,7 +13,7 @@ sys.path.append(base_path)
 import argparse
 import json
 from sentence_transformers import SentenceTransformer
-from config import SYNONYM_LIBRARY_PATH, input_classifier_logger as logger
+from config import SYNONYM_LIBRARY_PATH, input_classifier_logger as logger, CONFIDENCE_THRESHOLDS
 
 from synonym_utils import load_synonym_library, generate_theme_embeddings
 from post_processing import classify_chunk, aggregate_themes, calculate_response_stats, calculate_theme_frequencies
@@ -72,7 +72,7 @@ def process_input(input_id, extracted_themes, response_text, test_run_id, probab
         
         # Classify the entire response_text as standalone
         response_themes, response_matching_scores = classify_chunk(
-            response_text, probable_theme, sbert_model, THEME_EMBEDDINGS, logger
+            response_text, probable_theme, sbert_model, THEME_EMBEDDINGS, logger, CONFIDENCE_THRESHOLDS
         )
         logger.info(f"[input_classifier] Response text themes for input_id {input_id}: {response_themes}")
 
@@ -147,6 +147,10 @@ def process_input(input_id, extracted_themes, response_text, test_run_id, probab
 
 
 def extract_probable_theme(probable_theme, input_id):
+    """
+    Extract the probable theme from various possible input formats.
+    For core_vision prompts (prompt_id >= 11), probable_theme should be a plain string.
+    """
     if probable_theme == "Not Used":
         logger.debug(f"[input_classifier] Freeform prompt detected for input_id {input_id}.")
         return "Not Used"
@@ -155,15 +159,20 @@ def extract_probable_theme(probable_theme, input_id):
         probable_theme = list(probable_theme.keys())[0]
         logger.debug(f"[input_classifier] Extracted probable_theme from dict: {probable_theme}")
     elif isinstance(probable_theme, str):
-        try:
-            probable_theme = list(json.loads(probable_theme).keys())[0]
-            logger.debug(f"[input_classifier] Extracted probable_theme: {probable_theme}")
-        except Exception as e:
-            logger.error(f"[input_classifier] Error parsing probable_theme for input_id {input_id}: {e}")
-            probable_theme = "Not Used"
-    elif isinstance(probable_theme, list):  # Handle list case
-        logger.error(f"[input_classifier] Unexpected probable_theme type: list. Using fallback 'Not Used'.")
-        probable_theme = "Not Used"
+        # If it's a string but looks like JSON, try to parse it
+        if probable_theme.startswith('{'):
+            try:
+                probable_theme = list(json.loads(probable_theme).keys())[0]
+                logger.debug(f"[input_classifier] Extracted probable_theme from JSON string: {probable_theme}")
+            except json.JSONDecodeError:
+                # If JSON parsing fails, use the string as is
+                logger.debug(f"[input_classifier] Using probable_theme string as is: {probable_theme}")
+        else:
+            # For plain strings (core_vision prompts), use as is
+            logger.debug(f"[input_classifier] Using probable_theme string as is: {probable_theme}")
+    elif isinstance(probable_theme, list):
+        logger.error(f"[input_classifier] Unexpected probable_theme type: list. Using first item if available.")
+        probable_theme = probable_theme[0] if probable_theme else "Not Used"
     else:
         logger.error(f"[input_classifier] Invalid probable_theme type for input_id {input_id}: {type(probable_theme)}")
         probable_theme = "Not Used"
@@ -214,7 +223,7 @@ def classify_chunks(extracted_themes, probable_theme, input_id, test_run_id):
             # Call classify_chunk for each chunk
             logger.debug(f"[input_classifier] Processing chunk_id {chunk.get('chunk_id', 'unknown')} for input_id {input_id}")
             chunk_themes, matching_scores = classify_chunk(
-                chunk["chunk_text"], probable_theme, sbert_model, THEME_EMBEDDINGS, logger
+                chunk["chunk_text"], probable_theme, sbert_model, THEME_EMBEDDINGS, logger, CONFIDENCE_THRESHOLDS
             )
         except Exception as e:
             logger.error(f"[input_classifier] Error in classify_chunk: {e}")
@@ -256,6 +265,14 @@ def process_test_run(test_run_id):
         for input_row in inputs:
             # Unpack the input row
             input_id, extracted_themes, response_text, probable_theme = input_row
+            
+            # Add debug logging here
+            logger.debug(f"[input_classifier] Raw input data for input_id {input_id}:")
+            logger.debug(f"  - probable_theme: {probable_theme}")
+            logger.debug(f"  - type: {type(probable_theme)}")
+            
+            # Let's also log the SQL query that fetched this data
+            logger.debug(f"[input_classifier] Input ID {input_id} probable_theme before processing: {probable_theme}")
 
             # Ensure extracted_themes is parsed correctly
             try:

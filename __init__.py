@@ -1,5 +1,4 @@
 """
 Koru Testing Package
 """
-
-from .config import *  # This makes config importable from anywhere
+# Empty for now - we'll import config directly where needed

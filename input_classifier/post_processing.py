@@ -5,12 +5,17 @@ sys.path.append(base_path)
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from config import input_classifier_logger as logger
-def classify_chunk(chunk_text, probable_theme, sbert_model, theme_embeddings, logger):
+
+def classify_chunk(chunk_text, probable_theme, sbert_model, theme_embeddings, logger, confidence_thresholds=None):
     """
     Classify a text chunk by calculating similarities to predefined themes.
     Includes a probable theme boost for higher confidence matching.
     """
     try:
+        # Use provided thresholds or fallback to defaults
+        min_confidence = confidence_thresholds.get('min_confidence', 0.3) if confidence_thresholds else 0.3
+        multi_theme_threshold = confidence_thresholds.get('multi_theme', 0.5) if confidence_thresholds else 0.5
+        
         # Generate embedding for the text chunk
         chunk_embedding = sbert_model.encode(chunk_text)
 
@@ -51,8 +56,8 @@ def classify_chunk(chunk_text, probable_theme, sbert_model, theme_embeddings, lo
         # Log confidence scores for each theme
         logger.info(f"Confidence scores for chunk '{chunk_text[:50]}...': {sorted_similarities}")
 
-        # Filter themes based on thresholds
-        matching_themes = [(theme, score) for theme, score in sorted_similarities if score >= 0.3]
+        # Filter themes based on configured thresholds
+        matching_themes = [(theme, score) for theme, score in sorted_similarities if score >= min_confidence]
 
         # Build matching_scores as a dictionary
         matching_scores = {theme: score for theme, score in matching_themes}
@@ -61,7 +66,7 @@ def classify_chunk(chunk_text, probable_theme, sbert_model, theme_embeddings, lo
         if not matching_themes:
             if probable_theme == "Not Used":
                 logger.warning(f"[post_proc] No themes matched for freeform chunk: {chunk_text[:50]}...")
-                return [], matching_scores  # No fallback, return empty list for chunk_themes
+                return [], matching_scores
             else:
                 logger.warning(f"[post_proc] Returning probable_theme '{probable_theme}' as fallback for chunk: {chunk_text[:50]}...")
                 return [probable_theme], matching_scores
@@ -72,12 +77,18 @@ def classify_chunk(chunk_text, probable_theme, sbert_model, theme_embeddings, lo
             matching_themes[0][1] >= 1.2 * matching_themes[1][1]
             else None
         )
-        multi_themes = [theme for theme, score in matching_themes if score >= 0.5]
+        multi_themes = [theme for theme, score in matching_themes if score >= multi_theme_threshold]
         logger.debug(f"[post_proc!] Returning from classify_chunk: themes={multi_themes if single_theme is None else [single_theme]}, scores={matching_themes}")
         # Ensure at least one theme is returned
         if single_theme is None and not multi_themes:
-            logger.warning(f"[post_proc] Returning probable_theme '{probable_theme}' as fallback for chunk: {chunk_text[:50]}...")
-            return [probable_theme], matching_scores  # Use probable_theme as fallback
+            # Take the highest scoring theme if it passes min_confidence
+            if matching_themes and matching_themes[0][1] >= min_confidence:
+                logger.info(f"[post_proc] Using highest scoring theme '{matching_themes[0][0]}' (score: {matching_themes[0][1]}) as fallback")
+                return [matching_themes[0][0]], matching_scores
+            # Only use probable_theme as fallback if no good matches
+            else:
+                logger.warning(f"[post_proc] Returning probable_theme '{probable_theme}' as fallback for chunk: {chunk_text[:50]}...")
+                return [probable_theme], matching_scores
 
         return multi_themes if single_theme is None else [single_theme], matching_scores
 

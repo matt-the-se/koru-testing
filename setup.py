@@ -7,7 +7,8 @@ setup(
         'input_processing*',
         'input_classifier*',
         'webapp*',
-        'shared*'
+        'shared*',
+        'generate_stories*'
     ]),
     install_requires=[
         'psycopg2-binary',

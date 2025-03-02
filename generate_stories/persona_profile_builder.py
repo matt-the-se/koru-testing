@@ -1,152 +1,95 @@
-import os
+from typing import Dict, Any
 import sys
-base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
-sys.path.append(base_path)
-import json
-import psycopg2
-import nltk
-from nltk.sentiment import SentimentIntensityAnalyzer
-from collections import Counter
-from config import DB_CONFIG, generate_stories_logger as logger
-from gs_db_utils import fetch_persona_data, pull_input_stats
+import os
 
-# Check if VADER lexicon is already installed before downloading
-try:
-    nltk.data.find('sentiment/vader_lexicon.zip')
-except LookupError:
-    nltk.download('vader_lexicon', quiet=True)
+# Handle imports differently based on how the file is being used
+if __name__ == "__main__" or __package__ is None:
+    # When run directly or from webapp
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+    from generate_stories.gs_db_utils import (
+        get_foundation_data,
+        get_inputs_data,
+        get_clarity_scores,
+        get_passion_scores
+    )
+else:
+    # When imported as part of the package
+    from .gs_db_utils import (
+        get_foundation_data,
+        get_inputs_data,
+        get_clarity_scores,
+        get_passion_scores
+    )
 
-# Initialize sentiment analyzer
-sia = SentimentIntensityAnalyzer()
-
-
-def calculate_passion_score(response_text, extracted_themes):
-    """
-    Calculate a passion score based on emotional words, repetition, length, and sentiment.
+def build_persona_profile(test_run_id: int, persona_id: int) -> Dict[str, Any]:
+    """Build persona profile using new streamlined approach"""
     
-    Args:
-        response_text (str): User-provided response.
-        extracted_themes (dict): Extracted theme confidences from response.
-
-    Returns:
-        float: Computed passion score.
-    """
-    passion_keywords = {"love", "dream", "joy", "fulfilled", "passionate", "excited", "obsessed", "deeply"}
-    word_count = len(response_text.split())
-    passion_count = sum(1 for word in response_text.lower().split() if word in passion_keywords)
-    sentiment_score = sia.polarity_scores(response_text)['pos']  # Positive sentiment emphasis
+    # Get foundation data
+    foundation = get_foundation_data(persona_id)
     
-    repetition_weight = sum(extracted_themes.values())  # More repeated themes → higher weight
-    detail_weight = word_count / 50  # Assume ~50 words = meaningful detail
-    passion_multiplier = 1 + (passion_count / max(word_count, 1))  # Passion keyword scaling
+    # Get inputs with their themes
+    inputs = get_inputs_data(test_run_id)
+    print(f"DEBUG: Found {len(inputs)} inputs for test_run_id {test_run_id}")
     
-    return (sentiment_score * 2) + repetition_weight + detail_weight + passion_multiplier
-
-
-def store_passion_scores(persona_id, test_run_id, inputs):
-    """
-    Store computed passion scores in the database as a single JSON object.
-
-    Args:
-        persona_id (int): The persona ID.
-        test_run_id (int): The test run ID.
-        inputs (list): List of persona input dictionaries.
-    """
-    try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        cur = conn.cursor()
-
-        # Create a dictionary of passion scores with input_id as keys
-        passion_scores_dict = {
-            str(input_data['input_id']): calculate_passion_score(
-                input_data['response_text'], 
-                input_data.get('extracted_themes', {}).get('response_text', {}).get('confidence', {})
-            )
-            for input_data in inputs
-        }
-
-        if not passion_scores_dict:
-            logger.warning(f"No passion scores generated for persona {persona_id}, skipping DB update.")
-            return  # Exit early if there's nothing to store
-
-        # Convert dictionary to JSON
-        passion_scores_json = json.dumps(passion_scores_dict)
-
-        # Update the persona's passion_scores column with the JSON object
-        cur.execute("""
-            UPDATE persona_inputs
-            SET passion_scores = %s::jsonb
-            WHERE persona_id = %s
-        """, (passion_scores_json, persona_id))
-
-        conn.commit()
-        
-        # Debug: Confirm database update
-        logger.info(f"Successfully updated passion_scores for persona {persona_id}")
-
-        cur.close()
-        conn.close()
-    except Exception as e:
-        logger.error(f"Error storing passion scores: {e}")
-
-
-def build_persona_profile(logger, persona_id, test_run_id):
-    """
-    Construct a detailed persona profile by aggregating multiple data sources.
+    # Get scores
+    clarity_scores = get_clarity_scores(test_run_id)
+    passion_scores = get_passion_scores(test_run_id)
     
-    Args:
-        persona_id (int): The persona ID.
-        test_run_id (int): The test run ID.
+    # Calculate theme confidences from inputs
+    theme_confidences = {}
+    for i, input_data in enumerate(inputs):
+        print(f"DEBUG: Processing input {i+1}/{len(inputs)}, input_id: {input_data.get('input_id')}")
+        if "extracted_themes" in input_data:
+            print(f"DEBUG: Input has extracted_themes")
+            # Get confidence scores from response_text
+            response_text = input_data['extracted_themes'].get('response_text', {})
+            print(f"DEBUG: response_text: {response_text}")
+            response_confidences = response_text.get('confidence', {})
+            print(f"DEBUG: response_confidences: {response_confidences}")
+            for theme, conf in response_confidences.items():
+                if conf > 0.3:  # Use a reasonable threshold
+                    if theme not in theme_confidences:
+                        theme_confidences[theme] = []
+                    theme_confidences[theme].append(conf)
+            
+            # Also check chunk-level themes
+            chunks = input_data['extracted_themes'].get('chunks', [])
+            print(f"DEBUG: Found {len(chunks)} chunks")
+            for chunk in chunks:
+                chunk_confidences = chunk.get('confidence', {})
+                print(f"DEBUG: chunk_confidences: {chunk_confidences}")
+                for theme, conf in chunk_confidences.items():
+                    if conf > 0.3:  # Use the same threshold
+                        if theme not in theme_confidences:
+                            theme_confidences[theme] = []
+                        theme_confidences[theme].append(conf)
     
-    Returns:
-        dict: Aggregated persona profile.
-    """
-    # Before calling fetch_persona_data, ensure we retrieve the test_run_id if missing
-    if test_run_id is None and persona_id is not None:
-        # Query the database to get test_run_id
-        query = "SELECT test_run_id FROM personas WHERE persona_id = %s;"
-        conn = psycopg2.connect(**DB_CONFIG)
-        cur = conn.cursor()
-        cur.execute(query, (persona_id,))
-        result = cur.fetchone()
-        cur.close()
-        conn.close()
-
-        if result:
-            test_run_id = result[0]
-
-    # Fetch raw input data
-    persona_data = fetch_persona_data(persona_id, test_run_id)
-    if not persona_data:
-        logger.warning(f"No persona data found for persona_id={persona_id}, test_run_id={test_run_id}")
-        return None
+    print(f"DEBUG: theme_confidences before averaging: {theme_confidences}")
     
-    # Pull statistical theme data
-    input_stats = pull_input_stats(test_run_id)
-    if not input_stats:
-        logger.warning(f"No input stats available for test_run_id={test_run_id}")
-        return None
+    # Average confidences
+    theme_confidences = {
+        theme: sum(confs) / len(confs)
+        for theme, confs in theme_confidences.items()
+    }
     
-    # Compute passion scores and store them in DB
-    store_passion_scores(persona_id, test_run_id, persona_data['inputs'])
+    print(f"DEBUG: Final theme_confidences: {theme_confidences}")
     
-    # Extract prioritized themes
-    theme_confidences = input_stats['theme_confidences']
+    # Sort themes by confidence for primary/secondary selection
     sorted_themes = sorted(theme_confidences.items(), key=lambda x: x[1], reverse=True)
+    print(f"DEBUG: sorted_themes: {sorted_themes}")
     primary_theme = sorted_themes[0][0] if sorted_themes else None
     secondary_themes = [t[0] for t in sorted_themes[1:3]] if len(sorted_themes) > 1 else []
     
+    print(f"DEBUG: primary_theme: {primary_theme}, secondary_themes: {secondary_themes}")
+    
     return {
-        "persona_id": persona_id,
+        "foundation": foundation,
+        "inputs": inputs,
+        "theme_confidences": theme_confidences,
+        "clarity_scores": clarity_scores,
+        "passion_scores": passion_scores,
         "test_run_id": test_run_id,
-        "foundation": persona_data["foundation"],
-        "inputs": persona_data["inputs"],
-        "theme_confidences": input_stats["theme_confidences"],
-        "chunk_confidences": input_stats["chunk_confidences"],
-        "response_confidences": input_stats["response_confidences"],
-        "theme_totals": input_stats["theme_totals"],
-        "passion_scores": {input_data['input_id']: calculate_passion_score(input_data['response_text'], input_data.get('extracted_themes', {}).get('response_text', {}).get('confidence', {})) for input_data in persona_data['inputs']},
+        "persona_id": persona_id,
         "primary_theme": primary_theme,
         "secondary_themes": secondary_themes
-    }
-
+    } 

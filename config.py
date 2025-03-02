@@ -62,6 +62,13 @@ CHUNK_CONFIDENCE_THRESHOLD = 0.3
 OVERALL_CONFIDENCE_THRESHOLD = 0.5
 PROBABLE_THEME_BOOST = 1.1
 
+# Input Classifier Confidence Thresholds
+CONFIDENCE_THRESHOLDS = {
+    'min_confidence': CHUNK_CONFIDENCE_THRESHOLD,  # Use existing threshold
+    'multi_theme': OVERALL_CONFIDENCE_THRESHOLD,   # Use existing threshold
+    'probable_theme_boost': PROBABLE_THEME_BOOST   # Use existing boost value
+}
+
 # Ensure the logs directory exists
 os.makedirs(LOGS_DIR, exist_ok=True)
 

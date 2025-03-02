@@ -5,63 +5,7 @@ sys.path.append(base_path)
 import psycopg2
 from psycopg2 import pool
 import json
-from typing import Dict, Any
 from config import DB_CONFIG, input_classifier_logger as logger
-
-# Data Contracts
-FOUNDATION_SCHEMA = {
-    "name": str,
-    "age": int,
-    "pronoun": str,
-    "location": str,
-    "relationship": str,
-    "children": str,
-    "pets": str
-}
-
-INPUT_SCHEMA = {
-    "input_id": int,
-    "response_text": str,
-    "prompt_theme": str,
-    "extracted_themes": {
-        "chunks": list,
-        "response_text": dict,
-        "aggregated": dict
-    },
-    "response_stats": dict,
-    "chunk_scores": list
-}
-
-PERSONA_DATA_SCHEMA = {
-    "foundation": FOUNDATION_SCHEMA,
-    "inputs": [INPUT_SCHEMA],
-    "theme_confidences": dict,
-    "passion_scores": dict,
-    "clarity_scores": dict,
-    "test_run_id": int,
-    "persona_id": int
-}
-
-# Schema Validation Functions
-def validate_schema(data: Dict[str, Any], schema: Dict[str, Any], path: str = "") -> None:
-    """Recursively validate data against schema"""
-    for field, field_type in schema.items():
-        full_path = f"{path}.{field}" if path else field
-        
-        if field not in data:
-            raise ValueError(f"Missing required field: {full_path}")
-            
-        if isinstance(field_type, dict):
-            validate_schema(data[field], field_type, full_path)
-        elif isinstance(field_type, list):
-            if not isinstance(data[field], list):
-                raise ValueError(f"Expected list for {full_path}")
-            for item in data[field]:
-                validate_schema(item, field_type[0], full_path)
-
-def validate_persona_data(data: Dict[str, Any]) -> None:
-    """Validate complete persona data structure"""
-    validate_schema(data, PERSONA_DATA_SCHEMA)
 
 # Initialize connection pool
 connection_pool = pool.SimpleConnectionPool(

@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request, current_app, send_file, render_template
-import subprocess
 import os
 from TTS.api import TTS
 import io
+from generate_stories import generate_stories_for_persona
 
 bp = Blueprint('stories', __name__, url_prefix='/api/v1')
 
@@ -18,29 +18,19 @@ def generate_story():
                 "message": "Missing test_run_id"
             }), 400
 
-        script_path = os.path.join(current_app.root_path, '..', 'generate_stories', 'generate_stories.py')
+        # Call the function directly instead of using subprocess
+        result = generate_stories_for_persona(test_run_id=test_run_id)
         
-        # Add project root to PYTHONPATH
-        env = os.environ.copy()
-        env['PYTHONPATH'] = os.path.join(current_app.root_path, '..')
-        
-        result = subprocess.run(
-            ['python', script_path, str(test_run_id)],
-            capture_output=True,
-            text=True,
-            env=env
-        )
-
-        if result.returncode != 0:
-            current_app.logger.error(f"Script error: {result.stderr}")
+        if result["status"] == "error":
+            current_app.logger.error(f"Story generation error: {result['error']}")
             return jsonify({
                 "status": "error",
-                "message": "Error generating story"
+                "message": result["error"]
             }), 500
 
         return jsonify({
             "status": "success",
-            "message": "Story generation started"
+            "message": "Story generation completed"
         })
 
     except Exception as e:
